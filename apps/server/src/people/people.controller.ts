@@ -7,8 +7,11 @@ import {
   Query,
   Res,
   HttpStatus,
+  Sse,
+  MessageEvent,
 } from '@nestjs/common';
 import { Response } from 'express';
+import { Observable, Subject } from 'rxjs';
 import { PeopleService } from './people.service';
 import type { Person, MergePeopleDto, BulkIdResult } from './people.types';
 
@@ -24,6 +27,35 @@ export class PeopleController {
     const includeHidden = withHidden !== 'false';
     const includeCounts = withCounts === 'true';
     return this.peopleService.getAllPeople(includeHidden, includeCounts);
+  }
+
+  @Sse('stream')
+  streamPeople(
+    @Query('withHidden') withHidden?: string,
+  ): Observable<MessageEvent> {
+    const includeHidden = withHidden !== 'false';
+    const subject = new Subject<MessageEvent>();
+
+    this.peopleService
+      .streamAllPeople(includeHidden, (progress) => {
+        subject.next({
+          data: JSON.stringify(progress),
+        } as MessageEvent);
+      })
+      .then((people) => {
+        subject.next({
+          data: JSON.stringify({ type: 'complete', people }),
+        } as MessageEvent);
+        subject.complete();
+      })
+      .catch((error) => {
+        subject.next({
+          data: JSON.stringify({ type: 'error', message: error.message }),
+        } as MessageEvent);
+        subject.complete();
+      });
+
+    return subject.asObservable();
   }
 
   @Post(':id/merge')

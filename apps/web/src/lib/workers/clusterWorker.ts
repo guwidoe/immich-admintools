@@ -1,16 +1,31 @@
 import type { Person, PersonCluster } from '$lib/types';
 import * as fuzz from 'fuzzball';
 
+// Normalize a name for comparison:
+// - Unicode NFC normalization (handles ö vs o+combining diaeresis)
+// - Trim whitespace
+// - Collapse multiple spaces
+function normalizeName(name: string): string {
+  return name
+    .normalize('NFC')
+    .trim()
+    .replace(/\s+/g, ' ');
+}
+
 function nameSimilarity(a: string, b: string): number {
   if (!a || !b) return 0;
-  return fuzz.ratio(a.trim(), b.trim());
+  return fuzz.ratio(normalizeName(a), normalizeName(b));
 }
 
 function generateClusterId(): string {
   return `cluster-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 }
 
-function clusterPeopleByName(people: Person[], threshold: number = 80): PersonCluster[] {
+function clusterPeopleByName(
+  people: Person[],
+  threshold: number = 80,
+  onProgress?: (current: number, total: number) => void
+): PersonCluster[] {
   const namedPeople = people.filter((p) => p.name && p.name.trim());
 
   if (namedPeople.length === 0) return [];
@@ -50,7 +65,12 @@ function clusterPeopleByName(people: Person[], threshold: number = 80): PersonCl
 
   const similarityScores = new Map<string, number>();
 
-  // Compare all pairs
+  // Compare all pairs - O(n²) but necessary for clustering
+  const totalComparisons = (namedPeople.length * (namedPeople.length - 1)) / 2;
+  let comparisonCount = 0;
+  let lastProgressReport = 0;
+  const PROGRESS_INTERVAL = 5000; // Report every 5000 comparisons
+
   for (let i = 0; i < namedPeople.length; i++) {
     for (let j = i + 1; j < namedPeople.length; j++) {
       const personA = namedPeople[i];
@@ -61,6 +81,12 @@ function clusterPeopleByName(people: Person[], threshold: number = 80): PersonCl
         union(personA.id, personB.id);
         const pairKey = [personA.id, personB.id].sort().join('-');
         similarityScores.set(pairKey, similarity);
+      }
+
+      comparisonCount++;
+      if (onProgress && comparisonCount - lastProgressReport >= PROGRESS_INTERVAL) {
+        onProgress(comparisonCount, totalComparisons);
+        lastProgressReport = comparisonCount;
       }
     }
   }
@@ -128,6 +154,12 @@ function clusterPeopleByName(people: Person[], threshold: number = 80): PersonCl
 // Worker message handler
 self.onmessage = (e: MessageEvent<{ people: Person[]; threshold: number }>) => {
   const { people, threshold } = e.data;
-  const clusters = clusterPeopleByName(people, threshold);
-  self.postMessage(clusters);
+
+  // Report progress callback
+  const reportProgress = (current: number, total: number) => {
+    self.postMessage({ type: 'progress', current, total });
+  };
+
+  const clusters = clusterPeopleByName(people, threshold, reportProgress);
+  self.postMessage({ type: 'result', clusters });
 };

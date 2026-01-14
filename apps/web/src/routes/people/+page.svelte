@@ -8,7 +8,7 @@
     mdiRefresh
   } from '@mdi/js';
   import type { Person, PersonCluster, MergeResult } from '$lib/types';
-  import { mergePeople, fetchPeople } from '$lib/api/client';
+  import { mergePeople, fetchPeople, fetchPeopleWithProgress } from '$lib/api/client';
   import PersonClusterCard from '$lib/components/PersonClusterCard.svelte';
   import MergeProgress from '$lib/components/MergeProgress.svelte';
 
@@ -22,7 +22,10 @@
   let mergeCompleted = $state(0);
   let mergeResults = $state<MergeResult[]>([]);
   let loading = $state(true);
+  let loadingStatus = $state('Connecting to server...');
+  let fetchProgress = $state(0); // 0-100 percentage for fetching
   let computing = $state(false);
+  let computeProgress = $state(0); // 0-100 percentage for computing
   let error = $state<string | null>(null);
   let people = $state<Person[]>([]);
   let clusters = $state<PersonCluster[]>([]);
@@ -48,9 +51,18 @@
       new URL('$lib/workers/clusterWorker.ts', import.meta.url),
       { type: 'module' }
     );
-    clusterWorker.onmessage = (e: MessageEvent<PersonCluster[]>) => {
-      clusters = e.data;
-      computing = false;
+    clusterWorker.onmessage = (e: MessageEvent<{ type: string; clusters?: PersonCluster[]; current?: number; total?: number }>) => {
+      const msg = e.data;
+      if (msg.type === 'progress' && msg.current !== undefined && msg.total !== undefined) {
+        computeProgress = Math.round((msg.current / msg.total) * 100);
+      } else if (msg.type === 'result' && msg.clusters) {
+        // Set to 100% first and wait for animation before hiding
+        computeProgress = 100;
+        setTimeout(() => {
+          clusters = msg.clusters!;
+          computing = false;
+        }, 200);
+      }
     };
     loadPeople();
   });
@@ -79,6 +91,7 @@
     if (!clusterWorker) return;
 
     computing = true;
+    computeProgress = 0;
     await tick(); // Let UI update to show computing state
 
     // Send work to worker - clone data to ensure it's serializable
@@ -88,11 +101,20 @@
 
   async function loadPeople() {
     loading = true;
+    loadingStatus = 'Fetching people from Immich...';
+    fetchProgress = 0;
     error = null;
     try {
-      // First fetch people without counts (fast)
-      const result = await fetchPeople(true, false);
+      // Fetch people with progress streaming
+      const result = await fetchPeopleWithProgress(true, (progress) => {
+        fetchProgress = Math.round((progress.loaded / progress.total) * 100);
+        loadingStatus = `Fetching people... ${progress.loaded.toLocaleString()} / ${progress.total.toLocaleString()}`;
+      });
+      console.log('[People] Fetched', result.length, 'people from API');
       people = result;
+      fetchProgress = 100;
+
+      loadingStatus = `Analyzing ${result.length.toLocaleString()} people for similar names...`;
       await tick();
       await computeClusters();
       loading = false;
@@ -307,11 +329,34 @@
 
   <!-- Cluster list -->
   {#if loading || computing}
-    <div class="flex flex-col items-center justify-center py-12 gap-3">
+    <div class="flex flex-col items-center justify-center py-12 gap-4">
       <LoadingSpinner />
-      <p class="text-sm text-gray-500 dark:text-gray-400">
-        {loading ? 'Loading people...' : 'Finding similar names...'}
-      </p>
+      <div class="text-center space-y-2">
+        <p class="text-sm font-medium text-gray-700 dark:text-gray-300">
+          {loading ? loadingStatus : `Comparing names... ${computeProgress}%`}
+        </p>
+        {#if loading && fetchProgress === 0}
+          <p class="text-xs text-gray-500 dark:text-gray-400">
+            Connecting to server...
+          </p>
+        {/if}
+      </div>
+      <!-- Progress bar -->
+      <div class="w-64 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+        {#if loading}
+          <!-- Actual progress bar for fetching -->
+          <div
+            class="h-full bg-immich-primary rounded-full transition-all duration-150"
+            style="width: {fetchProgress}%"
+          ></div>
+        {:else}
+          <!-- Actual progress bar for computing -->
+          <div
+            class="h-full bg-immich-primary rounded-full transition-all duration-150"
+            style="width: {computeProgress}%"
+          ></div>
+        {/if}
+      </div>
     </div>
   {:else if clusters.length === 0}
     <div class="text-center py-12">
@@ -352,3 +397,4 @@
     onClose={closeProgress}
   />
 {/if}
+

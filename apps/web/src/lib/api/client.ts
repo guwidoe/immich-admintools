@@ -104,6 +104,45 @@ export async function fetchPeople(withHidden = true, withCounts = false): Promis
   return request<Person[]>(`/people?withHidden=${withHidden}&withCounts=${withCounts}`);
 }
 
+export interface FetchProgress {
+  type: string;
+  loaded: number;
+  total: number;
+  page: number;
+}
+
+export function fetchPeopleWithProgress(
+  withHidden = true,
+  onProgress: (progress: FetchProgress) => void
+): Promise<Person[]> {
+  return new Promise((resolve, reject) => {
+    const eventSource = new EventSource(`${API_BASE}/people/stream?withHidden=${withHidden}`);
+
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+
+        if (data.type === 'progress') {
+          onProgress(data);
+        } else if (data.type === 'complete') {
+          eventSource.close();
+          resolve(data.people);
+        } else if (data.type === 'error') {
+          eventSource.close();
+          reject(new Error(data.message));
+        }
+      } catch {
+        // Ignore parse errors
+      }
+    };
+
+    eventSource.onerror = () => {
+      eventSource.close();
+      reject(new Error('Connection lost'));
+    };
+  });
+}
+
 export async function mergePeople(primaryId: string, ids: string[]): Promise<BulkIdResult[]> {
   return request<BulkIdResult[]>(`/people/${encodeURIComponent(primaryId)}/merge`, {
     method: 'POST',

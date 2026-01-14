@@ -17,6 +17,14 @@ export class PeopleService {
     return people;
   }
 
+  async streamAllPeople(
+    withHidden = true,
+    onProgress: (progress: { type: string; loaded: number; total: number; page: number }) => void,
+  ): Promise<Person[]> {
+    console.log(`[PeopleService] Streaming people from Immich`);
+    return this.immichApiService.getPeopleWithProgress(withHidden, onProgress);
+  }
+
   async mergePeople(primaryId: string, ids: string[]): Promise<BulkIdResult[]> {
     console.log(
       `[PeopleService] Merging ${ids.length} people into ${primaryId}`,

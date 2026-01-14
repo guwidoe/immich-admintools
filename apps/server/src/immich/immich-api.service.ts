@@ -118,15 +118,58 @@ export class ImmichApiService implements OnModuleInit {
   }
 
   async getPeople(withHidden = true): Promise<Person[]> {
-    const response = await this.fetch<ImmichPeopleResponse>(
-      `/api/people?withHidden=${withHidden}`,
-    );
+    return this.getPeopleWithProgress(withHidden);
+  }
 
-    if (!response) {
-      return [];
+  async getPeopleWithProgress(
+    withHidden = true,
+    onProgress?: (progress: { type: string; loaded: number; total: number; page: number }) => void,
+  ): Promise<Person[]> {
+    const allPeople: Person[] = [];
+    let page = 1;
+    const pageSize = 1000; // Max allowed by Immich API
+    let totalPeople = 0;
+
+    console.log(`[ImmichApiService] Fetching people (withHidden: ${withHidden})`);
+
+    while (true) {
+      const response = await this.fetch<ImmichPeopleResponse>(
+        `/api/people?withHidden=${withHidden}&page=${page}&size=${pageSize}`,
+      );
+
+      if (!response || !response.people) {
+        console.error(`[ImmichApiService] Failed to fetch page ${page}`);
+        break;
+      }
+
+      if (page === 1) {
+        totalPeople = response.total;
+        console.log(`[ImmichApiService] Total people in Immich: ${totalPeople}`);
+      }
+
+      console.log(`[ImmichApiService] Page ${page}: fetched ${response.people.length} people`);
+      allPeople.push(...response.people);
+
+      // Report progress
+      if (onProgress) {
+        onProgress({
+          type: 'progress',
+          loaded: allPeople.length,
+          total: totalPeople,
+          page,
+        });
+      }
+
+      // Check if we have all people
+      if (allPeople.length >= totalPeople || response.people.length < pageSize) {
+        break;
+      }
+
+      page++;
     }
 
-    return response.people || [];
+    console.log(`[ImmichApiService] Total fetched: ${allPeople.length}/${totalPeople} people`);
+    return allPeople;
   }
 
   async mergePeople(primaryId: string, ids: string[]): Promise<BulkIdResult[]> {
