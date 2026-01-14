@@ -1,10 +1,12 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import '@immich/ui/theme/default.css';
 
 @layer base {
   html {
-    @apply bg-immich-dark-bg text-immich-dark-text;
+    @apply bg-dark-950 text-dark-50;
+  }
+
+  html.light {
+    @apply bg-light-50 text-light-950;
   }
 
   body {
@@ -14,14 +16,38 @@
 
 @layer components {
   .nav-link {
-    @apply flex items-center gap-3 px-4 py-2 rounded-lg text-immich-dark-muted hover:bg-immich-dark-card hover:text-immich-dark-text transition-colors;
+    @apply flex items-center gap-3 px-4 py-2 rounded-lg text-dark-400 hover:bg-dark-800 hover:text-dark-50 transition-colors;
   }
 
+  /* In dark mode, primary-400 is darker (0.526 lightness) providing good contrast with white text */
   .nav-link.active {
-    @apply bg-immich-primary text-white;
+    @apply bg-primary-400 text-white;
   }
 
+  /* Legacy card class - will be replaced by @immich/ui Card component */
   .card {
-    @apply bg-immich-dark-card border border-immich-dark-border rounded-lg p-4;
+    @apply bg-dark-900 border border-dark-700 rounded-lg p-4;
+  }
+
+  html.light .nav-link {
+    @apply text-light-600 hover:bg-light-200 hover:text-light-950;
+  }
+
+  /* In light mode, primary-500 is darker, good for contrast */
+  html.light .nav-link.active {
+    @apply bg-primary-500 text-white;
+  }
+
+  html.light .card {
+    @apply bg-light-50 border-light-300;
+  }
+
+  /* Constrain @immich/ui logo and icon sizes */
+  .logo-container :global(svg),
+  .logo-container :global(img) {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
   }
 }

@@ -1,18 +1,22 @@
 <script lang="ts">
   import '../app.css';
+  import { onMount } from 'svelte';
   import { page } from '$app/stores';
   import { fetchHealth } from '$lib/api/client';
   import type { Snippet } from 'svelte';
+  import { initializeTheme, ThemeSwitcher, Icon, Logo, TooltipProvider } from '@immich/ui';
+  import { mdiViewDashboard, mdiHistory, mdiCog } from '@mdi/js';
 
   let { children }: { children: Snippet } = $props();
 
   let currentPath = $derived($page.url.pathname);
   let status = $state<'ok' | 'degraded' | 'error' | 'checking' | 'unknown'>('checking');
+  let mounted = $state(false);
 
   const navItems = [
-    { href: '/', label: 'Dashboard', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
-    { href: '/history', label: 'History', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
-    { href: '/settings', label: 'Settings', icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z' }
+    { href: '/', label: 'Dashboard', icon: mdiViewDashboard },
+    { href: '/history', label: 'History', icon: mdiHistory },
+    { href: '/settings', label: 'Settings', icon: mdiCog }
   ];
 
   function isActive(href: string): boolean {
@@ -25,15 +29,15 @@
   function getStatusColor(s: string): string {
     switch (s) {
       case 'ok':
-        return 'bg-green-500';
+        return 'bg-success-500';
       case 'degraded':
-        return 'bg-yellow-500';
+        return 'bg-warning-500';
       case 'error':
-        return 'bg-red-500';
+        return 'bg-danger-500';
       case 'checking':
-        return 'bg-blue-500 animate-pulse';
+        return 'bg-info-500 animate-pulse';
       default:
-        return 'bg-gray-500';
+        return 'bg-dark-500';
     }
   }
 
@@ -46,8 +50,9 @@
     }
   }
 
-  // Use $effect for setup and cleanup in Svelte 5
-  $effect(() => {
+  onMount(() => {
+    mounted = true;
+    initializeTheme({ selector: 'html' });
     checkHealth();
     const pollInterval = setInterval(checkHealth, 30000);
 
@@ -57,13 +62,23 @@
   });
 </script>
 
+<TooltipProvider>
 <div class="flex h-screen">
   <!-- Sidebar -->
-  <aside class="w-64 bg-immich-dark-card border-r border-immich-dark-border flex flex-col">
+  <aside class="w-64 bg-dark-900 border-r border-dark-700 flex flex-col">
     <!-- Logo/Title -->
-    <div class="p-4 border-b border-immich-dark-border">
-      <h1 class="text-xl font-bold text-white">Immich Admin Tools</h1>
-      <p class="text-sm text-immich-dark-muted mt-1">Queue Management</p>
+    <div class="p-4 border-b border-dark-700">
+      <div class="flex items-center gap-3">
+        {#if mounted}
+          <div class="w-10 h-10 flex-shrink-0 [&_svg]:w-full [&_svg]:h-full">
+            <Logo variant="icon" size="tiny" />
+          </div>
+        {/if}
+        <div>
+          <h1 class="text-lg font-bold text-dark-50">Admin Tools</h1>
+          <p class="text-xs text-dark-400">Queue Management</p>
+        </div>
+      </div>
     </div>
 
     <!-- Navigation -->
@@ -74,19 +89,17 @@
           class="nav-link"
           class:active={isActive(item.href)}
         >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d={item.icon} />
-          </svg>
+          <Icon icon={item.icon} size="20" />
           {item.label}
         </a>
       {/each}
     </nav>
 
     <!-- Connection Status -->
-    <div class="p-4 border-t border-immich-dark-border">
+    <div class="p-4 border-t border-dark-700">
       <div class="flex items-center gap-2">
         <div class="w-2 h-2 rounded-full {getStatusColor(status)}"></div>
-        <span class="text-sm text-immich-dark-muted">
+        <span class="text-sm text-dark-400">
           {#if status === 'ok'}
             Connected
           {:else if status === 'checking'}
@@ -104,10 +117,10 @@
   </aside>
 
   <!-- Main Content -->
-  <main class="flex-1 overflow-auto">
+  <main class="flex-1 overflow-auto bg-dark-950">
     <!-- Header -->
-    <header class="h-16 bg-immich-dark-card border-b border-immich-dark-border flex items-center px-6">
-      <h2 class="text-lg font-semibold text-white">
+    <header class="h-16 bg-dark-900 border-b border-dark-700 flex items-center justify-between px-6">
+      <h2 class="text-lg font-semibold text-dark-50">
         {#if currentPath === '/'}
           Dashboard
         {:else if currentPath.startsWith('/queues/')}
@@ -120,6 +133,11 @@
           Immich Admin Tools
         {/if}
       </h2>
+      {#if mounted}
+        <div class="[&_svg]:w-6 [&_svg]:h-6">
+          <ThemeSwitcher size="small" />
+        </div>
+      {/if}
     </header>
 
     <!-- Page Content -->
@@ -128,3 +146,4 @@
     </div>
   </main>
 </div>
+</TooltipProvider>
