@@ -5,7 +5,7 @@
   import { fetchHealth } from '$lib/api/client';
   import type { Snippet } from 'svelte';
   import { initializeTheme, ThemeSwitcher, Logo, TooltipProvider } from '@immich/ui';
-  import { mdiViewDashboard, mdiHistory, mdiCog } from '@mdi/js';
+  import { mdiViewDashboard, mdiHistory, mdiCog, mdiAccountMultiple } from '@mdi/js';
   import SideBarLink from '$lib/components/SideBarLink.svelte';
 
   let { children }: { children: Snippet } = $props();
@@ -16,6 +16,7 @@
 
   const navItems = [
     { href: '/', title: 'Dashboard', icon: mdiViewDashboard },
+    { href: '/people', title: 'People', icon: mdiAccountMultiple },
     { href: '/history', title: 'History', icon: mdiHistory },
     { href: '/settings', title: 'Settings', icon: mdiCog }
   ];
@@ -114,6 +115,8 @@
           Dashboard
         {:else if currentPath.startsWith('/queues/')}
           Queue Details
+        {:else if currentPath === '/people'}
+          Merge People
         {:else if currentPath === '/history'}
           Job History
         {:else if currentPath === '/settings'}

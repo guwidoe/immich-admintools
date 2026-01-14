@@ -1,4 +1,4 @@
-import type { HealthStatus, QueueStatus, JobsResponse, JobState, AllTrackedStats } from '$lib/types';
+import type { HealthStatus, QueueStatus, JobsResponse, JobState, AllTrackedStats, Person, BulkIdResult } from '$lib/types';
 
 const API_BASE = '/api';
 
@@ -97,4 +97,20 @@ export async function resetStats(queueName?: string): Promise<void> {
       method: 'POST'
     });
   }
+}
+
+// People API
+export async function fetchPeople(withHidden = true): Promise<Person[]> {
+  return request<Person[]>(`/people?withHidden=${withHidden}`);
+}
+
+export async function mergePeople(primaryId: string, ids: string[]): Promise<BulkIdResult[]> {
+  return request<BulkIdResult[]>(`/people/${encodeURIComponent(primaryId)}/merge`, {
+    method: 'POST',
+    body: JSON.stringify({ ids })
+  });
+}
+
+export function getPersonThumbnailUrl(personId: string): string {
+  return `${API_BASE}/people/${encodeURIComponent(personId)}/thumbnail`;
 }

@@ -61,3 +61,33 @@ export interface TrackedQueueStats {
 }
 
 export type AllTrackedStats = Record<string, TrackedQueueStats>;
+
+// People types
+export interface Person {
+  id: string;
+  name: string;
+  birthDate: string | null;
+  thumbnailPath: string;
+  isHidden: boolean;
+  assetCount?: number;
+}
+
+export interface PersonCluster {
+  id: string;
+  people: Person[];
+  primaryId: string;
+  similarity: number;
+  representativeName: string;
+}
+
+export interface BulkIdResult {
+  id: string;
+  success: boolean;
+  error?: 'NO_PERMISSION' | 'NOT_FOUND' | 'UNKNOWN';
+}
+
+export interface MergeResult {
+  clusterId: string;
+  results: BulkIdResult[];
+  success: boolean;
+}

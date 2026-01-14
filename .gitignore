@@ -17,6 +17,8 @@ build/
 .vscode/
 *.swp
 *.swo
+.claude/
+.cursor/
 
 # OS files
 .DS_Store

@@ -1,5 +1,11 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import type {
+  Person,
+  BulkIdResult,
+  ImmichPeopleResponse,
+  PersonStatistics,
+} from '../people/people.types';
 
 export interface ImmichQueue {
   name: string;
@@ -109,5 +115,85 @@ export class ImmichApiService implements OnModuleInit {
     });
 
     return response !== null;
+  }
+
+  async getPeople(withHidden = true): Promise<Person[]> {
+    const response = await this.fetch<ImmichPeopleResponse>(
+      `/api/people?withHidden=${withHidden}`,
+    );
+
+    if (!response) {
+      return [];
+    }
+
+    return response.people || [];
+  }
+
+  async mergePeople(primaryId: string, ids: string[]): Promise<BulkIdResult[]> {
+    const response = await this.fetch<BulkIdResult[]>(
+      `/api/people/${primaryId}/merge`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ ids }),
+      },
+    );
+
+    return response || [];
+  }
+
+  async getPersonThumbnail(id: string): Promise<Buffer | null> {
+    const url = `${this.apiUrl}/api/people/${id}/thumbnail`;
+
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'x-api-key': this.apiKey,
+        },
+      });
+
+      if (!response.ok) {
+        console.error(
+          `[ImmichApiService] Thumbnail error: ${response.status} ${response.statusText}`,
+        );
+        return null;
+      }
+
+      const arrayBuffer = await response.arrayBuffer();
+      return Buffer.from(arrayBuffer);
+    } catch (error) {
+      console.error(
+        `[ImmichApiService] Thumbnail request failed for ${id}:`,
+        error,
+      );
+      return null;
+    }
+  }
+
+  async getPersonStatistics(id: string): Promise<PersonStatistics | null> {
+    return this.fetch<PersonStatistics>(`/api/people/${id}/statistics`);
+  }
+
+  async getPeopleWithCounts(withHidden = true): Promise<Person[]> {
+    const people = await this.getPeople(withHidden);
+
+    // Fetch statistics for all people in parallel (batched)
+    const BATCH_SIZE = 20;
+    const results: Person[] = [];
+
+    for (let i = 0; i < people.length; i += BATCH_SIZE) {
+      const batch = people.slice(i, i + BATCH_SIZE);
+      const batchWithCounts = await Promise.all(
+        batch.map(async (person) => {
+          const stats = await this.getPersonStatistics(person.id);
+          return {
+            ...person,
+            assetCount: stats?.assets,
+          };
+        }),
+      );
+      results.push(...batchWithCounts);
+    }
+
+    return results;
   }
 }

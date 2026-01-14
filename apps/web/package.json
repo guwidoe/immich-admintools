@@ -12,7 +12,8 @@
   },
   "dependencies": {
     "@immich/ui": "latest",
-    "@mdi/js": "^7.4.47"
+    "@mdi/js": "^7.4.47",
+    "fuzzball": "^2.2.3"
   },
   "devDependencies": {
     "@sveltejs/adapter-auto": "^4.0.0",

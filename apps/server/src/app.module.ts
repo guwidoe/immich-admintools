@@ -8,6 +8,7 @@ import { ImmichModule } from './immich/immich.module';
 import { HealthModule } from './health/health.module';
 import { WebsocketModule } from './websocket/websocket.module';
 import { StatsModule } from './stats/stats.module';
+import { PeopleModule } from './people/people.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { StatsModule } from './stats/stats.module';
     QueuesModule,
     HealthModule,
     WebsocketModule,
+    PeopleModule,
   ],
 })
 export class AppModule {}
