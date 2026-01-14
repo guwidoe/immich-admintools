@@ -110,4 +110,75 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       return false;
     }
   }
+
+  async getJobsByState(
+    queueName: string,
+    state: 'waiting' | 'active' | 'failed' | 'delayed',
+    start = 0,
+    end = 49,
+  ): Promise<{ jobId: string; data: Record<string, string> }[]> {
+    if (!this.client) {
+      return [];
+    }
+
+    try {
+      const prefix = `immich_bull:${queueName}`;
+      let jobIds: string[] = [];
+
+      if (state === 'waiting') {
+        // Waiting jobs are stored in a list
+        jobIds = await this.client.lrange(`${prefix}:wait`, start, end);
+      } else if (state === 'active') {
+        // Active jobs are stored in a list
+        jobIds = await this.client.lrange(`${prefix}:active`, start, end);
+      } else if (state === 'failed') {
+        // Failed jobs are stored in a sorted set
+        jobIds = await this.client.zrange(`${prefix}:failed`, start, end);
+      } else if (state === 'delayed') {
+        // Delayed jobs are stored in a sorted set
+        jobIds = await this.client.zrange(`${prefix}:delayed`, start, end);
+      }
+
+      // Fetch job data for each job
+      const jobs = await Promise.all(
+        jobIds.map(async (jobId) => {
+          const data = await this.client!.hgetall(`${prefix}:${jobId}`);
+          return { jobId, data };
+        }),
+      );
+
+      return jobs.filter((job) => Object.keys(job.data).length > 0);
+    } catch (error) {
+      console.error(`[RedisService] Error getting ${state} jobs for ${queueName}:`, error);
+      return [];
+    }
+  }
+
+  async getJobCountByState(
+    queueName: string,
+    state: 'waiting' | 'active' | 'failed' | 'delayed',
+  ): Promise<number> {
+    if (!this.client) {
+      return 0;
+    }
+
+    try {
+      const prefix = `immich_bull:${queueName}`;
+
+      if (state === 'waiting') {
+        return await this.client.llen(`${prefix}:wait`);
+      } else if (state === 'active') {
+        return await this.client.llen(`${prefix}:active`);
+      } else if (state === 'failed') {
+        return await this.client.zcard(`${prefix}:failed`);
+      } else if (state === 'delayed') {
+        return await this.client.zcard(`${prefix}:delayed`);
+      }
+
+      return 0;
+    } catch (error) {
+      console.error(`[RedisService] Error getting ${state} count for ${queueName}:`, error);
+      return 0;
+    }
+  }
 }

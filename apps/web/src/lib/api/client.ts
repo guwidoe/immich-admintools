@@ -1,4 +1,4 @@
-import type { HealthStatus, QueueStatus } from '$lib/types';
+import type { HealthStatus, QueueStatus, JobsResponse, JobState, AllTrackedStats } from '$lib/types';
 
 const API_BASE = '/api';
 
@@ -65,4 +65,36 @@ export async function resumeAllQueues(): Promise<void> {
   await request('/queues/resume-all', {
     method: 'POST'
   });
+}
+
+export async function fetchJobs(
+  queueName: string,
+  state: JobState,
+  page = 0,
+  pageSize = 50
+): Promise<JobsResponse> {
+  const params = new URLSearchParams({
+    state,
+    page: page.toString(),
+    pageSize: pageSize.toString()
+  });
+  return request<JobsResponse>(
+    `/queues/${encodeURIComponent(queueName)}/jobs?${params}`
+  );
+}
+
+export async function fetchAllStats(): Promise<AllTrackedStats> {
+  return request<AllTrackedStats>('/stats');
+}
+
+export async function resetStats(queueName?: string): Promise<void> {
+  if (queueName) {
+    await request(`/stats/${encodeURIComponent(queueName)}/reset`, {
+      method: 'POST'
+    });
+  } else {
+    await request('/stats/reset-all', {
+      method: 'POST'
+    });
+  }
 }

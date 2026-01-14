@@ -18,6 +18,22 @@ export interface StuckJob {
   ageSeconds: number;
 }
 
+export interface JobInfo {
+  id: string;
+  name: string;
+  data: Record<string, unknown>;
+  timestamp: number;
+  processedOn?: number;
+  finishedOn?: number;
+  failedReason?: string;
+  attemptsMade: number;
+}
+
+export interface JobsResponse {
+  jobs: JobInfo[];
+  total: number;
+}
+
 @Injectable()
 export class QueuesService {
   constructor(
@@ -54,6 +70,49 @@ export class QueuesService {
 
   async resumeQueue(name: string): Promise<boolean> {
     return this.immichApi.resumeQueue(name);
+  }
+
+  async getJobs(
+    queueName: string,
+    state: 'waiting' | 'active' | 'failed' | 'delayed',
+    page = 0,
+    pageSize = 50,
+  ): Promise<JobsResponse> {
+    const start = page * pageSize;
+    const end = start + pageSize - 1;
+
+    const [rawJobs, total] = await Promise.all([
+      this.redis.getJobsByState(queueName, state, start, end),
+      this.redis.getJobCountByState(queueName, state),
+    ]);
+
+    const jobs: JobInfo[] = rawJobs.map((job) => {
+      let parsedData: Record<string, unknown> = {};
+      try {
+        if (job.data.data) {
+          parsedData = JSON.parse(job.data.data);
+        }
+      } catch {
+        // Keep empty object if parse fails
+      }
+
+      return {
+        id: job.jobId,
+        name: job.data.name || 'unknown',
+        data: parsedData,
+        timestamp: parseInt(job.data.timestamp || '0', 10),
+        processedOn: job.data.processedOn
+          ? parseInt(job.data.processedOn, 10)
+          : undefined,
+        finishedOn: job.data.finishedOn
+          ? parseInt(job.data.finishedOn, 10)
+          : undefined,
+        failedReason: job.data.failedReason || undefined,
+        attemptsMade: parseInt(job.data.attemptsMade || '0', 10),
+      };
+    });
+
+    return { jobs, total };
   }
 
   async clearStuckJobs(name: string): Promise<number> {

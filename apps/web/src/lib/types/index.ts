@@ -35,3 +35,29 @@ export interface ApiError {
   message: string;
   code?: string;
 }
+
+export interface JobInfo {
+  id: string;
+  name: string;
+  data: Record<string, unknown>;
+  timestamp: number;
+  processedOn?: number;
+  finishedOn?: number;
+  failedReason?: string;
+  attemptsMade: number;
+}
+
+export interface JobsResponse {
+  jobs: JobInfo[];
+  total: number;
+}
+
+export type JobState = 'waiting' | 'active' | 'failed' | 'delayed';
+
+export interface TrackedQueueStats {
+  completed: number;
+  failed: number;
+  lastUpdated: string | null;
+}
+
+export type AllTrackedStats = Record<string, TrackedQueueStats>;

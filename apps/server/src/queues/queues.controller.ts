@@ -1,5 +1,5 @@
-import { Controller, Get, Post, Param } from '@nestjs/common';
-import { QueuesService, ExtendedQueueInfo } from './queues.service';
+import { Controller, Get, Post, Param, Query } from '@nestjs/common';
+import { QueuesService, ExtendedQueueInfo, JobsResponse } from './queues.service';
 
 @Controller('queues')
 export class QueuesController {
@@ -31,5 +31,20 @@ export class QueuesController {
   async clearStuckJobs(@Param('name') name: string): Promise<{ cleared: number }> {
     const cleared = await this.queuesService.clearStuckJobs(name);
     return { cleared };
+  }
+
+  @Get(':name/jobs')
+  async getJobs(
+    @Param('name') name: string,
+    @Query('state') state: 'waiting' | 'active' | 'failed' | 'delayed' = 'waiting',
+    @Query('page') page = '0',
+    @Query('pageSize') pageSize = '50',
+  ): Promise<JobsResponse> {
+    return this.queuesService.getJobs(
+      name,
+      state,
+      parseInt(page, 10),
+      parseInt(pageSize, 10),
+    );
   }
 }

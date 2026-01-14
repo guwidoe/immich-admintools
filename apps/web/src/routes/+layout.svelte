@@ -1,14 +1,13 @@
 <script lang="ts">
   import '../app.css';
   import { page } from '$app/stores';
-  import { onMount } from 'svelte';
-  import { connectionStore, connectionStatus } from '$lib/stores/connection';
+  import { fetchHealth } from '$lib/api/client';
   import type { Snippet } from 'svelte';
 
   let { children }: { children: Snippet } = $props();
 
   let currentPath = $derived($page.url.pathname);
-  let status = $state('unknown');
+  let status = $state<'ok' | 'degraded' | 'error' | 'checking' | 'unknown'>('checking');
 
   const navItems = [
     { href: '/', label: 'Dashboard', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
@@ -23,8 +22,8 @@
     return currentPath.startsWith(href);
   }
 
-  function getStatusColor(status: string): string {
-    switch (status) {
+  function getStatusColor(s: string): string {
+    switch (s) {
       case 'ok':
         return 'bg-green-500';
       case 'degraded':
@@ -38,17 +37,22 @@
     }
   }
 
-  onMount(() => {
-    connectionStore.startPolling(30000);
+  async function checkHealth() {
+    try {
+      const health = await fetchHealth();
+      status = health.status;
+    } catch {
+      status = 'error';
+    }
+  }
 
-    // Subscribe to the store and update local state
-    const unsubscribe = connectionStatus.subscribe((value) => {
-      status = value;
-    });
+  // Use $effect for setup and cleanup in Svelte 5
+  $effect(() => {
+    checkHealth();
+    const pollInterval = setInterval(checkHealth, 30000);
 
     return () => {
-      connectionStore.stopPolling();
-      unsubscribe();
+      clearInterval(pollInterval);
     };
   });
 </script>
