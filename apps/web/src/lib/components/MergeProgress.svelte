@@ -18,8 +18,8 @@
 </script>
 
 <!-- Backdrop -->
-<div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-  <Card class="w-full max-w-md">
+<div class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+  <Card class="w-full max-w-md bg-white dark:bg-gray-900">
     <CardBody class="p-6">
       <h2 class="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
         {isComplete ? 'Merge Complete' : 'Merging People...'}

@@ -100,8 +100,8 @@ export async function resetStats(queueName?: string): Promise<void> {
 }
 
 // People API
-export async function fetchPeople(withHidden = true): Promise<Person[]> {
-  return request<Person[]>(`/people?withHidden=${withHidden}`);
+export async function fetchPeople(withHidden = true, withCounts = false): Promise<Person[]> {
+  return request<Person[]>(`/people?withHidden=${withHidden}&withCounts=${withCounts}`);
 }
 
 export async function mergePeople(primaryId: string, ids: string[]): Promise<BulkIdResult[]> {

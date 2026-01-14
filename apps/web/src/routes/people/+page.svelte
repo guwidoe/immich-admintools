@@ -90,13 +90,27 @@
     loading = true;
     error = null;
     try {
-      const result = await fetchPeople();
+      // First fetch people without counts (fast)
+      const result = await fetchPeople(true, false);
       people = result;
-      await tick(); // Let UI update
+      await tick();
       await computeClusters();
+      loading = false;
+
+      // Then fetch counts in background and update
+      fetchPeople(true, true).then((peopleWithCounts) => {
+        // Create a map for quick lookup
+        const countMap = new Map(peopleWithCounts.map((p) => [p.id, p.assetCount]));
+        // Update existing people with counts
+        people = people.map((p) => ({ ...p, assetCount: countMap.get(p.id) }));
+        // Also update clusters' people arrays
+        clusters = clusters.map((c) => ({
+          ...c,
+          people: c.people.map((p) => ({ ...p, assetCount: countMap.get(p.id) }))
+        }));
+      });
     } catch (err) {
       error = err instanceof Error ? err.message : 'Failed to fetch people';
-    } finally {
       loading = false;
     }
   }
@@ -152,6 +166,25 @@
     }
   }
 
+  // Update local state after a successful merge (avoids refetching/reclustering)
+  function applyMergeToLocalState(cluster: PersonCluster) {
+    const mergedIds = new Set(cluster.people.filter((p) => p.id !== cluster.primaryId).map((p) => p.id));
+
+    // Update the primary person's asset count (sum of all merged people)
+    const totalAssets = cluster.people.reduce((sum, p) => sum + (p.assetCount || 0), 0);
+
+    // Update people: remove merged ones, update primary's count
+    people = people
+      .filter((p) => !mergedIds.has(p.id))
+      .map((p) => (p.id === cluster.primaryId ? { ...p, assetCount: totalAssets } : p));
+
+    // Remove the cluster from the list
+    clusters = clusters.filter((c) => c.id !== cluster.id);
+
+    // Clean up selection
+    selectedClusterIds = new Set([...selectedClusterIds].filter((id) => id !== cluster.id));
+  }
+
   async function handleMergeSingle(cluster: PersonCluster) {
     mergingClusterIds = new Set([...mergingClusterIds, cluster.id]);
 
@@ -160,9 +193,7 @@
     mergingClusterIds = new Set([...mergingClusterIds].filter((id) => id !== cluster.id));
 
     if (result.success) {
-      // Remove merged cluster and update people list
-      await loadPeople();
-      selectedClusterIds = new Set([...selectedClusterIds].filter((id) => id !== cluster.id));
+      applyMergeToLocalState(cluster);
     } else {
       error = `Failed to merge cluster "${cluster.representativeName}"`;
     }
@@ -181,10 +212,12 @@
       const result = await mergeCluster(cluster);
       mergeResults = [...mergeResults, result];
       mergeCompleted++;
+
+      if (result.success) {
+        applyMergeToLocalState(cluster);
+      }
     }
 
-    // Refresh people list after all merges
-    await loadPeople();
     selectedClusterIds = new Set();
   }
 

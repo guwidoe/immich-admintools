@@ -19,9 +19,11 @@ export class PeopleController {
   @Get()
   async getPeople(
     @Query('withHidden') withHidden?: string,
+    @Query('withCounts') withCounts?: string,
   ): Promise<Person[]> {
     const includeHidden = withHidden !== 'false';
-    return this.peopleService.getAllPeople(includeHidden);
+    const includeCounts = withCounts === 'true';
+    return this.peopleService.getAllPeople(includeHidden, includeCounts);
   }
 
   @Post(':id/merge')

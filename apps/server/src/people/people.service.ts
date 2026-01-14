@@ -6,9 +6,13 @@ import type { Person, BulkIdResult } from './people.types';
 export class PeopleService {
   constructor(private readonly immichApiService: ImmichApiService) {}
 
-  async getAllPeople(withHidden = true): Promise<Person[]> {
-    console.log('[PeopleService] Fetching all people with counts from Immich');
-    const people = await this.immichApiService.getPeopleWithCounts(withHidden);
+  async getAllPeople(withHidden = true, withCounts = false): Promise<Person[]> {
+    console.log(
+      `[PeopleService] Fetching all people from Immich (withCounts: ${withCounts})`,
+    );
+    const people = withCounts
+      ? await this.immichApiService.getPeopleWithCounts(withHidden)
+      : await this.immichApiService.getPeople(withHidden);
     console.log(`[PeopleService] Found ${people.length} people`);
     return people;
   }
