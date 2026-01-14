@@ -7,6 +7,7 @@ import { RedisModule } from './redis/redis.module';
 import { ImmichModule } from './immich/immich.module';
 import { HealthModule } from './health/health.module';
 import { WebsocketModule } from './websocket/websocket.module';
+import { StatsModule } from './stats/stats.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { WebsocketModule } from './websocket/websocket.module';
     }),
     RedisModule,
     ImmichModule,
+    StatsModule,
     QueuesModule,
     HealthModule,
     WebsocketModule,

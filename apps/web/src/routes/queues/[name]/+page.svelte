@@ -82,22 +82,37 @@
         </button>
       </div>
 
+      <!-- Tracked Stats (persistent completion tracking) -->
+      <div class="grid grid-cols-2 gap-4 mb-4">
+        <div class="p-4 bg-green-900/20 border border-green-800 rounded-lg">
+          <p class="text-green-400 text-sm font-medium">Jobs Completed</p>
+          <p class="text-3xl font-bold text-green-400">{(data.queue.trackedStats?.completed ?? 0).toLocaleString()}</p>
+          <p class="text-xs text-immich-dark-muted mt-1">Tracked since monitoring started</p>
+        </div>
+        <div class="p-4 bg-red-900/20 border border-red-800 rounded-lg">
+          <p class="text-red-400 text-sm font-medium">Jobs Failed</p>
+          <p class="text-3xl font-bold text-red-400">{(data.queue.trackedStats?.failed ?? 0).toLocaleString()}</p>
+          <p class="text-xs text-immich-dark-muted mt-1">Tracked since monitoring started</p>
+        </div>
+      </div>
+
+      <!-- Current Queue State -->
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div class="p-4 bg-immich-dark-bg rounded-lg">
           <p class="text-immich-dark-muted text-sm">Waiting</p>
-          <p class="text-2xl font-bold text-white">{data.queue.jobCounts.waiting}</p>
+          <p class="text-2xl font-bold text-white">{data.queue.jobCounts.waiting.toLocaleString()}</p>
         </div>
         <div class="p-4 bg-immich-dark-bg rounded-lg">
           <p class="text-immich-dark-muted text-sm">Active</p>
-          <p class="text-2xl font-bold text-white">{data.queue.jobCounts.active}</p>
+          <p class="text-2xl font-bold text-white">{data.queue.jobCounts.active.toLocaleString()}</p>
         </div>
         <div class="p-4 bg-immich-dark-bg rounded-lg">
-          <p class="text-immich-dark-muted text-sm">Failed</p>
-          <p class="text-2xl font-bold {data.queue.jobCounts.failed > 0 ? 'text-red-400' : 'text-white'}">{data.queue.jobCounts.failed}</p>
+          <p class="text-immich-dark-muted text-sm">In Queue (Failed)</p>
+          <p class="text-2xl font-bold {data.queue.jobCounts.failed > 0 ? 'text-red-400' : 'text-white'}">{data.queue.jobCounts.failed.toLocaleString()}</p>
         </div>
         <div class="p-4 bg-immich-dark-bg rounded-lg">
           <p class="text-immich-dark-muted text-sm">Delayed</p>
-          <p class="text-2xl font-bold text-white">{data.queue.jobCounts.delayed}</p>
+          <p class="text-2xl font-bold text-white">{data.queue.jobCounts.delayed.toLocaleString()}</p>
         </div>
       </div>
     </div>

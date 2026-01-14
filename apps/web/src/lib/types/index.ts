@@ -11,6 +11,11 @@ export interface QueueStatus {
     paused: number;
   };
   stuckJobs?: StuckJob[];
+  trackedStats?: {
+    completed: number;
+    failed: number;
+    lastUpdated: string | null;
+  };
 }
 
 export interface StuckJob {

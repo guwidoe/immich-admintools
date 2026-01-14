@@ -2,9 +2,15 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ImmichApiService, ImmichQueue } from '../immich/immich-api.service';
 import { RedisService } from '../redis/redis.service';
+import { StatsService } from '../stats/stats.service';
 
 export interface ExtendedQueueInfo extends ImmichQueue {
   stuckJobs: StuckJob[];
+  trackedStats: {
+    completed: number;
+    failed: number;
+    lastUpdated: Date | null;
+  };
 }
 
 export interface StuckJob {
@@ -18,6 +24,7 @@ export class QueuesService {
     private readonly immichApi: ImmichApiService,
     private readonly redis: RedisService,
     private readonly configService: ConfigService,
+    private readonly statsService: StatsService,
   ) {}
 
   async getAllQueues(): Promise<ExtendedQueueInfo[]> {
@@ -84,9 +91,13 @@ export class QueuesService {
       }
     }
 
+    // Get tracked stats from our StatsService
+    const trackedStats = await this.statsService.getQueueStats(queue.name);
+
     return {
       ...queue,
       stuckJobs,
+      trackedStats,
     };
   }
 

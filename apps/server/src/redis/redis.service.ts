@@ -51,8 +51,8 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       return [];
     }
     try {
-      // BullMQ stores active jobs in bull:<queueName>:active
-      const activeKey = `bull:${queueName}:active`;
+      // BullMQ stores active jobs in immich_bull:<queueName>:active
+      const activeKey = `immich_bull:${queueName}:active`;
       const jobIds = await this.client.lrange(activeKey, 0, -1);
       return jobIds;
     } catch (error) {
@@ -66,8 +66,8 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       return null;
     }
     try {
-      // BullMQ stores job data in bull:<queueName>:<jobId>
-      const jobKey = `bull:${queueName}:${jobId}`;
+      // BullMQ stores job data in immich_bull:<queueName>:<jobId>
+      const jobKey = `immich_bull:${queueName}:${jobId}`;
       const data = await this.client.hgetall(jobKey);
       return Object.keys(data).length > 0 ? data : null;
     } catch (error) {
@@ -81,7 +81,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       return null;
     }
     try {
-      const jobKey = `bull:${queueName}:${jobId}`;
+      const jobKey = `immich_bull:${queueName}:${jobId}`;
       const processedOn = await this.client.hget(jobKey, 'processedOn');
 
       if (!processedOn) {
@@ -102,7 +102,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       return false;
     }
     try {
-      const activeKey = `bull:${queueName}:active`;
+      const activeKey = `immich_bull:${queueName}:active`;
       const removed = await this.client.lrem(activeKey, 1, jobId);
       return removed > 0;
     } catch (error) {
