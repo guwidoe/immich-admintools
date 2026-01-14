@@ -2,7 +2,7 @@
   import { invalidateAll } from '$app/navigation';
   import type { AllTrackedStats, TrackedQueueStats } from '$lib/types';
   import { resetStats } from '$lib/api/client';
-  import { Alert, Button, Icon } from '@immich/ui';
+  import { Alert, Button, Card, CardBody, Icon } from '@immich/ui';
   import { mdiRefresh, mdiAlertCircle, mdiChartBar } from '@mdi/js';
 
   let { data } = $props<{ data: { stats: AllTrackedStats; error: string | null } }>();
@@ -69,8 +69,8 @@
 <div class="space-y-6">
   <div class="flex items-center justify-between">
     <div>
-      <h1 class="text-2xl font-bold text-dark-50 dark:text-dark-50 light:text-light-950">Job History</h1>
-      <p class="text-dark-400 dark:text-dark-400 light:text-light-600 mt-1">View completed and failed job history</p>
+      <h1 class="text-2xl font-bold text-dark-50">Job History</h1>
+      <p class="text-dark-400 mt-1">View completed and failed job history</p>
     </div>
     <div class="flex items-center gap-2">
       <Button size="small" variant="ghost" onclick={() => invalidateAll()}>
@@ -100,90 +100,98 @@
 
   <!-- Summary Cards -->
   <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-    <div class="card">
-      <h3 class="text-dark-50 dark:text-dark-50 light:text-light-950 font-medium mb-2">Completed Jobs</h3>
-      <p class="text-3xl font-bold text-success-500">{totalCompleted.toLocaleString()}</p>
-      <p class="text-dark-400 dark:text-dark-400 light:text-light-600 text-sm">Since monitoring started</p>
-    </div>
-    <div class="card">
-      <h3 class="text-dark-50 dark:text-dark-50 light:text-light-950 font-medium mb-2">Failed Jobs</h3>
-      <p class="text-3xl font-bold text-danger-500">{totalFailed.toLocaleString()}</p>
-      <p class="text-dark-400 dark:text-dark-400 light:text-light-600 text-sm">Since monitoring started</p>
-    </div>
-    <div class="card">
-      <h3 class="text-dark-50 dark:text-dark-50 light:text-light-950 font-medium mb-2">Success Rate</h3>
-      <p class="text-3xl font-bold text-dark-50 dark:text-dark-50 light:text-light-950">
-        {#if totalCompleted + totalFailed > 0}
-          {((totalCompleted / (totalCompleted + totalFailed)) * 100).toFixed(1)}%
-        {:else}
-          --
-        {/if}
-      </p>
-      <p class="text-dark-400 dark:text-dark-400 light:text-light-600 text-sm">Overall</p>
-    </div>
+    <Card>
+      <CardBody>
+        <h3 class="text-dark-50 font-medium mb-2">Completed Jobs</h3>
+        <p class="text-3xl font-bold text-success-500">{totalCompleted.toLocaleString()}</p>
+        <p class="text-dark-400 text-sm">Since monitoring started</p>
+      </CardBody>
+    </Card>
+    <Card>
+      <CardBody>
+        <h3 class="text-dark-50 font-medium mb-2">Failed Jobs</h3>
+        <p class="text-3xl font-bold text-danger-500">{totalFailed.toLocaleString()}</p>
+        <p class="text-dark-400 text-sm">Since monitoring started</p>
+      </CardBody>
+    </Card>
+    <Card>
+      <CardBody>
+        <h3 class="text-dark-50 font-medium mb-2">Success Rate</h3>
+        <p class="text-3xl font-bold text-dark-50">
+          {#if totalCompleted + totalFailed > 0}
+            {((totalCompleted / (totalCompleted + totalFailed)) * 100).toFixed(1)}%
+          {:else}
+            --
+          {/if}
+        </p>
+        <p class="text-dark-400 text-sm">Overall</p>
+      </CardBody>
+    </Card>
   </div>
 
   <!-- Per-Queue Stats -->
-  <div class="card">
-    <h2 class="text-lg font-semibold text-dark-50 dark:text-dark-50 light:text-light-950 mb-4">Stats by Queue</h2>
+  <Card>
+    <CardBody>
+      <h2 class="text-lg font-semibold text-dark-50 mb-4">Stats by Queue</h2>
 
-    {#if activeQueues.length === 0}
-      <div class="text-center py-8 text-dark-400 dark:text-dark-400 light:text-light-600">
-        <Icon icon={mdiChartBar} size="48" class="mx-auto mb-4 opacity-50" />
-        <p>No job activity tracked yet.</p>
-        <p class="text-sm mt-1">Stats will appear here once jobs start completing.</p>
-      </div>
-    {:else}
-      <div class="overflow-x-auto">
-        <table class="w-full">
-          <thead>
-            <tr class="text-left text-dark-400 dark:text-dark-400 light:text-light-600 text-sm border-b border-dark-700 dark:border-dark-700 light:border-light-300">
-              <th class="pb-3 font-medium">Queue</th>
-              <th class="pb-3 font-medium text-right">Completed</th>
-              <th class="pb-3 font-medium text-right">Failed</th>
-              <th class="pb-3 font-medium text-right">Success Rate</th>
-              <th class="pb-3 font-medium text-right">Last Activity</th>
-              <th class="pb-3 font-medium text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-dark-700 dark:divide-dark-700 light:divide-light-300">
-            {#each activeQueues as [queueName, stats]}
-              {@const successRate = stats.completed + stats.failed > 0
-                ? ((stats.completed / (stats.completed + stats.failed)) * 100).toFixed(1)
-                : '--'}
-              <tr class="hover:bg-dark-800/50 dark:hover:bg-dark-800/50 light:hover:bg-light-200/50">
-                <td class="py-3">
-                  <a href="/queues/{encodeURIComponent(queueName)}" class="text-dark-50 dark:text-dark-50 light:text-light-950 hover:text-primary">
-                    {queueName}
-                  </a>
-                </td>
-                <td class="py-3 text-right text-success-500 font-mono">
-                  {stats.completed.toLocaleString()}
-                </td>
-                <td class="py-3 text-right text-danger-500 font-mono">
-                  {stats.failed.toLocaleString()}
-                </td>
-                <td class="py-3 text-right">
-                  <span class="{parseFloat(successRate) >= 95 ? 'text-success-500' : parseFloat(successRate) >= 80 ? 'text-warning-500' : 'text-danger-500'}">
-                    {successRate}{successRate !== '--' ? '%' : ''}
-                  </span>
-                </td>
-                <td class="py-3 text-right text-dark-400 dark:text-dark-400 light:text-light-600 text-sm">
-                  {formatDate(stats.lastUpdated)}
-                </td>
-                <td class="py-3 text-right">
-                  <button
-                    onclick={() => handleResetQueue(queueName)}
-                    class="text-xs text-danger-500 hover:text-danger-400"
-                  >
-                    Reset
-                  </button>
-                </td>
+      {#if activeQueues.length === 0}
+        <div class="text-center py-8 text-dark-400">
+          <Icon icon={mdiChartBar} size="48" class="mx-auto mb-4 opacity-50" />
+          <p>No job activity tracked yet.</p>
+          <p class="text-sm mt-1">Stats will appear here once jobs start completing.</p>
+        </div>
+      {:else}
+        <div class="overflow-x-auto">
+          <table class="w-full">
+            <thead>
+              <tr class="text-left text-dark-400 text-sm border-b border-dark-700">
+                <th class="pb-3 font-medium">Queue</th>
+                <th class="pb-3 font-medium text-right">Completed</th>
+                <th class="pb-3 font-medium text-right">Failed</th>
+                <th class="pb-3 font-medium text-right">Success Rate</th>
+                <th class="pb-3 font-medium text-right">Last Activity</th>
+                <th class="pb-3 font-medium text-right">Actions</th>
               </tr>
-            {/each}
-          </tbody>
-        </table>
-      </div>
-    {/if}
-  </div>
+            </thead>
+            <tbody class="divide-y divide-dark-700">
+              {#each activeQueues as [queueName, stats]}
+                {@const successRate = stats.completed + stats.failed > 0
+                  ? ((stats.completed / (stats.completed + stats.failed)) * 100).toFixed(1)
+                  : '--'}
+                <tr class="hover:bg-dark-800/50">
+                  <td class="py-3">
+                    <a href="/queues/{encodeURIComponent(queueName)}" class="text-dark-50 hover:text-primary-400">
+                      {queueName}
+                    </a>
+                  </td>
+                  <td class="py-3 text-right text-success-500 font-mono">
+                    {stats.completed.toLocaleString()}
+                  </td>
+                  <td class="py-3 text-right text-danger-500 font-mono">
+                    {stats.failed.toLocaleString()}
+                  </td>
+                  <td class="py-3 text-right">
+                    <span class="{parseFloat(successRate) >= 95 ? 'text-success-500' : parseFloat(successRate) >= 80 ? 'text-warning-500' : 'text-danger-500'}">
+                      {successRate}{successRate !== '--' ? '%' : ''}
+                    </span>
+                  </td>
+                  <td class="py-3 text-right text-dark-400 text-sm">
+                    {formatDate(stats.lastUpdated)}
+                  </td>
+                  <td class="py-3 text-right">
+                    <button
+                      onclick={() => handleResetQueue(queueName)}
+                      class="text-xs text-danger-500 hover:text-danger-400"
+                    >
+                      Reset
+                    </button>
+                  </td>
+                </tr>
+              {/each}
+            </tbody>
+          </table>
+        </div>
+      {/if}
+    </CardBody>
+  </Card>
 </div>

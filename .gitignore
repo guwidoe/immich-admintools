@@ -36,3 +36,6 @@ coverage/
 # Misc
 *.tgz
 .cache/
+
+# Reference symlink
+immich-reference

@@ -1,53 +1,43 @@
+@import 'tailwindcss';
 @import '@immich/ui/theme/default.css';
 
+@theme inline {
+  --color-immich-primary: rgb(var(--immich-primary));
+  --color-immich-bg: rgb(var(--immich-bg));
+  --color-immich-fg: rgb(var(--immich-fg));
+  --color-immich-gray: rgb(var(--immich-gray));
+
+  --color-immich-dark-primary: rgb(var(--immich-dark-primary));
+  --color-immich-dark-bg: rgb(var(--immich-dark-bg));
+  --color-immich-dark-fg: rgb(var(--immich-dark-fg));
+  --color-immich-dark-gray: rgb(var(--immich-dark-gray));
+}
+
 @layer base {
-  html {
-    @apply bg-dark-950 text-dark-50;
+  :root {
+    /* light */
+    --immich-primary: 66 80 175;
+    --immich-bg: 255 255 255;
+    --immich-fg: 0 0 0;
+    --immich-gray: 243 244 246;
+
+    /* dark */
+    --immich-dark-primary: 172 203 250;
+    --immich-dark-bg: 10 10 10;
+    --immich-dark-fg: 229 231 235;
+    --immich-dark-gray: 33 33 33;
   }
 
-  html.light {
-    @apply bg-light-50 text-light-950;
+  html {
+    @apply bg-immich-bg text-immich-fg;
+  }
+
+  .dark html,
+  html.dark {
+    @apply bg-immich-dark-bg text-immich-dark-fg;
   }
 
   body {
     @apply min-h-screen;
-  }
-}
-
-@layer components {
-  .nav-link {
-    @apply flex items-center gap-3 px-4 py-2 rounded-lg text-dark-400 hover:bg-dark-800 hover:text-dark-50 transition-colors;
-  }
-
-  /* In dark mode, primary-400 is darker (0.526 lightness) providing good contrast with white text */
-  .nav-link.active {
-    @apply bg-primary-400 text-white;
-  }
-
-  /* Legacy card class - will be replaced by @immich/ui Card component */
-  .card {
-    @apply bg-dark-900 border border-dark-700 rounded-lg p-4;
-  }
-
-  html.light .nav-link {
-    @apply text-light-600 hover:bg-light-200 hover:text-light-950;
-  }
-
-  /* In light mode, primary-500 is darker, good for contrast */
-  html.light .nav-link.active {
-    @apply bg-primary-500 text-white;
-  }
-
-  html.light .card {
-    @apply bg-light-50 border-light-300;
-  }
-
-  /* Constrain @immich/ui logo and icon sizes */
-  .logo-container :global(svg),
-  .logo-container :global(img) {
-    max-width: 100%;
-    max-height: 100%;
-    width: auto;
-    height: auto;
   }
 }

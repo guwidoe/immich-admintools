@@ -4,8 +4,9 @@
   import { page } from '$app/stores';
   import { fetchHealth } from '$lib/api/client';
   import type { Snippet } from 'svelte';
-  import { initializeTheme, ThemeSwitcher, Icon, Logo, TooltipProvider } from '@immich/ui';
+  import { initializeTheme, ThemeSwitcher, Logo, TooltipProvider } from '@immich/ui';
   import { mdiViewDashboard, mdiHistory, mdiCog } from '@mdi/js';
+  import SideBarLink from '$lib/components/SideBarLink.svelte';
 
   let { children }: { children: Snippet } = $props();
 
@@ -14,17 +15,10 @@
   let mounted = $state(false);
 
   const navItems = [
-    { href: '/', label: 'Dashboard', icon: mdiViewDashboard },
-    { href: '/history', label: 'History', icon: mdiHistory },
-    { href: '/settings', label: 'Settings', icon: mdiCog }
+    { href: '/', title: 'Dashboard', icon: mdiViewDashboard },
+    { href: '/history', title: 'History', icon: mdiHistory },
+    { href: '/settings', title: 'Settings', icon: mdiCog }
   ];
-
-  function isActive(href: string): boolean {
-    if (href === '/') {
-      return currentPath === '/';
-    }
-    return currentPath.startsWith(href);
-  }
 
   function getStatusColor(s: string): string {
     switch (s) {
@@ -65,41 +59,36 @@
 <TooltipProvider>
 <div class="flex h-screen">
   <!-- Sidebar -->
-  <aside class="w-64 bg-dark-900 border-r border-dark-700 flex flex-col">
-    <!-- Logo/Title -->
-    <div class="p-4 border-b border-dark-700">
-      <div class="flex items-center gap-3">
+  <aside class="w-64 flex flex-col h-full justify-between">
+    <div class="flex flex-col pt-4 pe-4 gap-1">
+      <!-- Logo/Title -->
+      <div class="flex items-center gap-3 px-5 pb-4">
         {#if mounted}
           <div class="w-10 h-10 flex-shrink-0 [&_svg]:w-full [&_svg]:h-full">
             <Logo variant="icon" size="tiny" />
           </div>
         {/if}
         <div>
-          <h1 class="text-lg font-bold text-dark-50">Admin Tools</h1>
-          <p class="text-xs text-dark-400">Queue Management</p>
+          <h1 class="text-lg font-bold">Admin Tools</h1>
+          <p class="text-xs text-gray-500 dark:text-gray-400">Queue Management</p>
         </div>
       </div>
+
+      <!-- Navigation -->
+      {#each navItems as item}
+        <SideBarLink
+          title={item.title}
+          href={item.href}
+          icon={item.icon}
+        />
+      {/each}
     </div>
 
-    <!-- Navigation -->
-    <nav class="flex-1 p-4 space-y-2">
-      {#each navItems as item}
-        <a
-          href={item.href}
-          class="nav-link"
-          class:active={isActive(item.href)}
-        >
-          <Icon icon={item.icon} size="20" />
-          {item.label}
-        </a>
-      {/each}
-    </nav>
-
     <!-- Connection Status -->
-    <div class="p-4 border-t border-dark-700">
+    <div class="mb-4 me-4 px-5 py-3">
       <div class="flex items-center gap-2">
         <div class="w-2 h-2 rounded-full {getStatusColor(status)}"></div>
-        <span class="text-sm text-dark-400">
+        <span class="text-sm text-gray-500 dark:text-immich-dark-fg">
           {#if status === 'ok'}
             Connected
           {:else if status === 'checking'}
@@ -117,10 +106,10 @@
   </aside>
 
   <!-- Main Content -->
-  <main class="flex-1 overflow-auto bg-dark-950">
+  <main class="flex-1 overflow-auto bg-immich-gray dark:bg-immich-dark-bg">
     <!-- Header -->
-    <header class="h-16 bg-dark-900 border-b border-dark-700 flex items-center justify-between px-6">
-      <h2 class="text-lg font-semibold text-dark-50">
+    <header class="h-16 border-b flex items-center justify-between px-6">
+      <h2 class="text-lg font-semibold">
         {#if currentPath === '/'}
           Dashboard
         {:else if currentPath.startsWith('/queues/')}
