@@ -1,0 +1,29 @@
+# Development docker-compose for Immich Admin Tools
+# This assumes you have Immich running separately
+
+services:
+  immich-admin-tools:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: immich_admin_tools
+    environment:
+      - IMMICH_API_URL=${IMMICH_API_URL:-http://immich_server:2283}
+      - IMMICH_API_KEY=${IMMICH_API_KEY}
+      - REDIS_URL=${REDIS_URL:-redis://immich_redis:6379}
+      - PORT=3000
+      - LOG_LEVEL=info
+    ports:
+      - "2285:3000"
+    restart: unless-stopped
+    # Uncomment if running alongside Immich stack
+    # networks:
+    #   - immich_default
+    # depends_on:
+    #   - immich_server
+    #   - immich_redis
+
+# Uncomment to join Immich's network
+# networks:
+#   immich_default:
+#     external: true

@@ -1,0 +1,30 @@
+{
+  "name": "immich-admin-tools",
+  "version": "0.1.0",
+  "description": "Administration dashboard for Immich - enhanced job queue visibility and control",
+  "private": true,
+  "license": "AGPL-3.0-only",
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "format": "prettier --write \"**/*.{ts,tsx,svelte,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,svelte,json,md}\"",
+    "clean": "turbo clean && rm -rf node_modules",
+    "typecheck": "turbo typecheck"
+  },
+  "devDependencies": {
+    "prettier": "^3.4.2",
+    "prettier-plugin-svelte": "^3.3.3",
+    "turbo": "^2.3.4",
+    "typescript": "^5.7.3"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.2.4"
+  }
+}

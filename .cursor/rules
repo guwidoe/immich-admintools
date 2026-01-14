@@ -1,0 +1,104 @@
+# Immich Admin Tools - Agent Context
+
+> This file is automatically loaded by Cursor for every session.
+> It provides shared context for all agents working on this project.
+
+## Project Overview
+Immich Admin Tools is a companion dashboard for Immich that provides enhanced job queue management:
+- Real-time queue monitoring with processing rates and ETAs
+- Stuck job detection and one-click recovery
+- Asset identification for problematic files
+- Auto-heal mode for automatic recovery
+
+## Quick Links
+- **Full roadmap**: `IMPLEMENTATION_PLAN.md`
+- **System design**: `docs/ARCHITECTURE.md`  
+- **Current tasks**: `docs/TASK_BOARD.md`
+- **Change history**: `CHANGELOG.md`
+- **Multi-agent guide**: `AGENT_ORCHESTRATION.md`
+
+## Tech Stack (Must Follow)
+| Layer | Technology | Docs |
+|-------|------------|------|
+| Backend | NestJS (TypeScript) | https://docs.nestjs.com |
+| Frontend | SvelteKit | https://kit.svelte.dev |
+| UI Components | @immich/ui | https://ui.immich.app |
+| Styling | Tailwind CSS | https://tailwindcss.com |
+| API Client | @immich/sdk | npm @immich/sdk |
+| Package Manager | pnpm | - |
+| Monorepo Tool | Turborepo | https://turbo.build |
+
+## Agent Roles
+
+### Architect Role
+- Maintains `docs/ARCHITECTURE.md`
+- Creates/updates module specs in `docs/modules/`
+- Reviews interfaces between modules
+- Updates `docs/TASK_BOARD.md` with new tasks
+
+### Implementor Role
+- Works on ONE module at a time
+- Reads module spec from `docs/modules/[name].md`
+- Updates `CHANGELOG.md` when done
+- Marks tasks complete in `docs/TASK_BOARD.md`
+
+## Before Starting Work
+1. Read `docs/TASK_BOARD.md` to see what's available
+2. Pick an unassigned task or continue previous work
+3. Read relevant module spec in `docs/modules/`
+4. If task doesn't exist, ask Architect to create spec first
+
+## After Completing Work
+1. Add entry to `CHANGELOG.md`
+2. Update task status in `docs/TASK_BOARD.md`
+3. If you changed interfaces, notify Architect to update `ARCHITECTURE.md`
+
+## Code Conventions
+- Follow Immich's patterns (NestJS decorators, SvelteKit file-based routing)
+- Use TypeScript strict mode
+- Prefer composition over inheritance
+- All API responses should be typed with DTOs
+- Use `@immich/ui` components, don't create custom UI primitives
+
+## File Structure
+```
+apps/
+├── server/          # NestJS backend (port 3001)
+│   └── src/
+│       ├── modules/ # Feature modules
+│       └── main.ts
+└── web/             # SvelteKit frontend (port 5173)
+    └── src/
+        ├── routes/  # Pages
+        └── lib/     # Components, stores, utils
+
+packages/
+└── shared/          # Shared types between server & web
+
+docs/
+├── ARCHITECTURE.md  # System design
+├── TASK_BOARD.md    # Current tasks
+└── modules/         # Module specifications
+```
+
+## Key Design Decisions
+1. **Use BOTH Immich API and Redis** - API for standard ops, Redis for stuck job detection
+2. **Scope driven by real issues** - Only add features as real problems arise
+3. **Reference implementation** - Not aiming for Immich core adoption, but showing how problems can be solved
+
+## Common Commands
+```bash
+pnpm install          # Install dependencies
+pnpm dev              # Start both server and web in dev mode
+pnpm build            # Build for production
+pnpm lint             # Run linter
+pnpm test             # Run tests
+```
+
+## Environment Variables
+```env
+IMMICH_API_URL=http://localhost:2283
+IMMICH_API_KEY=your-api-key
+REDIS_URL=redis://localhost:6379
+PORT=3001
+```

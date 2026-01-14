@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply bg-immich-dark-bg text-immich-dark-text;
+  }
+
+  body {
+    @apply min-h-screen;
+  }
+}
+
+@layer components {
+  .nav-link {
+    @apply flex items-center gap-3 px-4 py-2 rounded-lg text-immich-dark-muted hover:bg-immich-dark-card hover:text-immich-dark-text transition-colors;
+  }
+
+  .nav-link.active {
+    @apply bg-immich-primary text-white;
+  }
+
+  .card {
+    @apply bg-immich-dark-card border border-immich-dark-border rounded-lg p-4;
+  }
+}
