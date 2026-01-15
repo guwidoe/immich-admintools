@@ -9,7 +9,14 @@
     mdiCheckCircle,
     mdiDelete,
     mdiChevronDown,
-    mdiChevronUp
+    mdiChevronUp,
+    mdiContentCopy,
+    mdiChevronLeft,
+    mdiChevronRight,
+    mdiArrowUp,
+    mdiArrowDown,
+    mdiMagnify,
+    mdiClose
   } from '@mdi/js';
   import type { DatabaseStats, ActiveQuery, FinishedQuery } from '$lib/types';
   import { streamDatabaseStats, fetchMonitoringStatus } from '$lib/api/client';
@@ -23,9 +30,20 @@
   let previousQueries = $state<Map<number, ActiveQuery>>(new Map());
   let showFinishedQueries = $state(true);
   let showActiveQueries = $state(true);
+  let expandedActiveQueries = $state<Set<number>>(new Set());
+  let expandedFinishedQueries = $state<Set<string>>(new Set());
+
+  // Pagination, sorting, filtering for finished queries
+  type SortColumn = 'pid' | 'duration' | 'completedAt' | 'query';
+  type SortDirection = 'asc' | 'desc';
+  let finishedPageSize = $state(25);
+  let finishedCurrentPage = $state(1);
+  let finishedSortColumn = $state<SortColumn>('completedAt');
+  let finishedSortDirection = $state<SortDirection>('desc');
+  let finishedFilter = $state('');
 
   const STORAGE_KEY = 'monitoring_finished_queries';
-  const MAX_FINISHED_QUERIES = 100;
+  const MAX_FINISHED_QUERIES = 1000;
 
   function loadFinishedQueries(): void {
     try {
@@ -91,13 +109,46 @@
     return `${(ms / 60000).toFixed(1)}m`;
   }
 
-  function formatQuery(query: string): string {
-    // Truncate long queries and format nicely
+  function formatQuery(query: string, expanded: boolean = false): string {
+    // Clean up whitespace
     const cleaned = query.replace(/\s+/g, ' ').trim();
+    if (expanded) {
+      return cleaned;
+    }
+    // Truncate long queries when not expanded
     if (cleaned.length > 200) {
       return cleaned.substring(0, 200) + '...';
     }
     return cleaned;
+  }
+
+  function toggleActiveQueryExpansion(pid: number): void {
+    const newSet = new Set(expandedActiveQueries);
+    if (newSet.has(pid)) {
+      newSet.delete(pid);
+    } else {
+      newSet.add(pid);
+    }
+    expandedActiveQueries = newSet;
+  }
+
+  function toggleFinishedQueryExpansion(key: string): void {
+    const newSet = new Set(expandedFinishedQueries);
+    if (newSet.has(key)) {
+      newSet.delete(key);
+    } else {
+      newSet.add(key);
+    }
+    expandedFinishedQueries = newSet;
+  }
+
+  function isQueryLong(query: string): boolean {
+    return query.replace(/\s+/g, ' ').trim().length > 200;
+  }
+
+  async function copyToClipboard(query: string): Promise<void> {
+    const cleaned = query.replace(/\s+/g, ' ').trim();
+    await navigator.clipboard.writeText(cleaned);
   }
 
   function getQueryColor(duration: number | null): string {
@@ -123,6 +174,77 @@
   function formatTime(ms: number): string {
     const date = new Date(ms);
     return date.toLocaleTimeString();
+  }
+
+  // Derived: filtered finished queries
+  let filteredFinishedQueries = $derived.by(() => {
+    if (!finishedFilter.trim()) return finishedQueries;
+    const lowerFilter = finishedFilter.toLowerCase();
+    return finishedQueries.filter(q =>
+      q.query.toLowerCase().includes(lowerFilter) ||
+      q.pid.toString().includes(lowerFilter)
+    );
+  });
+
+  // Derived: sorted finished queries
+  let sortedFinishedQueries = $derived.by(() => {
+    const sorted = [...filteredFinishedQueries];
+    sorted.sort((a, b) => {
+      let comparison = 0;
+      switch (finishedSortColumn) {
+        case 'pid':
+          comparison = a.pid - b.pid;
+          break;
+        case 'duration':
+          comparison = a.duration - b.duration;
+          break;
+        case 'completedAt':
+          comparison = a.completedAt - b.completedAt;
+          break;
+        case 'query':
+          comparison = a.query.localeCompare(b.query);
+          break;
+      }
+      return finishedSortDirection === 'asc' ? comparison : -comparison;
+    });
+    return sorted;
+  });
+
+  // Derived: paginated finished queries
+  let paginatedFinishedQueries = $derived.by(() => {
+    const start = (finishedCurrentPage - 1) * finishedPageSize;
+    return sortedFinishedQueries.slice(start, start + finishedPageSize);
+  });
+
+  // Derived: total pages
+  let finishedTotalPages = $derived(Math.max(1, Math.ceil(filteredFinishedQueries.length / finishedPageSize)));
+
+  // Reset to page 1 when filter changes
+  $effect(() => {
+    // Access finishedFilter to track it
+    finishedFilter;
+    finishedCurrentPage = 1;
+  });
+
+  function toggleSort(column: SortColumn): void {
+    if (finishedSortColumn === column) {
+      finishedSortDirection = finishedSortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+      finishedSortColumn = column;
+      finishedSortDirection = 'desc';
+    }
+  }
+
+  function goToPage(page: number): void {
+    finishedCurrentPage = Math.max(1, Math.min(page, finishedTotalPages));
+  }
+
+  function removeFinishedQueryByKey(key: string): void {
+    const [pid, completedAt] = key.split('-');
+    finishedQueries = finishedQueries.filter(q =>
+      !(q.pid.toString() === pid && q.completedAt.toString() === completedAt)
+    );
+    saveFinishedQueries();
   }
 
   onMount(async () => {
@@ -267,22 +389,45 @@
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-200 dark:divide-gray-600">
-                {#each stats.activeQueries as query (query.pid)}
+                {#each stats.activeQueries.toSorted((a, b) => a.pid - b.pid) as query (query.pid)}
                   {@const state = getStateDisplay(query)}
+                  {@const isExpanded = expandedActiveQueries.has(query.pid)}
+                  {@const isLong = isQueryLong(query.query)}
                   <tr class="hover:bg-gray-200/50 dark:hover:bg-gray-700/50">
-                    <td class="px-4 py-3 whitespace-nowrap text-sm font-mono dark:text-white">
+                    <td class="px-4 py-3 whitespace-nowrap text-sm font-mono dark:text-white align-top">
                       {query.pid}
                     </td>
-                    <td class="px-4 py-3 whitespace-nowrap text-sm font-mono {getQueryColor(query.duration)}">
+                    <td class="px-4 py-3 whitespace-nowrap text-sm font-mono {getQueryColor(query.duration)} align-top">
                       {formatDuration(query.duration)}
                     </td>
-                    <td class="px-4 py-3 whitespace-nowrap">
+                    <td class="px-4 py-3 whitespace-nowrap align-top">
                       <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {state.color}">
                         {state.label}
                       </span>
                     </td>
                     <td class="px-4 py-3 text-sm dark:text-gray-200">
-                      <code class="text-xs break-all">{formatQuery(query.query)}</code>
+                      <div class="flex items-start gap-2">
+                        <code class="text-xs break-all whitespace-pre-wrap flex-1 select-text">{formatQuery(query.query, isExpanded)}</code>
+                        <div class="flex items-center gap-1 flex-shrink-0">
+                          {#if isLong}
+                            <button
+                              type="button"
+                              class="text-xs text-immich-primary dark:text-immich-dark-primary hover:underline"
+                              onclick={() => toggleActiveQueryExpansion(query.pid)}
+                            >
+                              {isExpanded ? '[collapse]' : '[expand]'}
+                            </button>
+                          {/if}
+                          <button
+                            type="button"
+                            class="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+                            onclick={() => copyToClipboard(query.query)}
+                            title="Copy query"
+                          >
+                            <Icon icon={mdiContentCopy} size="0.875em" />
+                          </button>
+                        </div>
+                      </div>
                     </td>
                   </tr>
                 {/each}
@@ -302,7 +447,7 @@
               Finished Queries ({finishedQueries.length})
             </h3>
             <p class="text-sm dark:text-white mt-1">
-              Recently completed database queries from this session
+              Recently completed database queries (stored in browser)
             </p>
           </div>
           <div class="flex items-center gap-3 ml-4">
@@ -320,55 +465,234 @@
         </div>
 
         {#if showFinishedQueries}
+          <!-- Filter and controls -->
+          <div class="px-4 pb-3 flex flex-wrap items-center gap-3">
+            <!-- Search filter -->
+            <div class="relative flex-1 min-w-48 max-w-md">
+              <Icon icon={mdiMagnify} size="1em" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Filter by query or PID..."
+                bind:value={finishedFilter}
+                class="w-full pl-9 pr-8 py-1.5 text-sm rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-immich-primary dark:focus:ring-immich-dark-primary"
+              />
+              {#if finishedFilter}
+                <button
+                  type="button"
+                  class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                  onclick={() => finishedFilter = ''}
+                >
+                  <Icon icon={mdiClose} size="0.875em" />
+                </button>
+              {/if}
+            </div>
+
+            <!-- Page size selector -->
+            <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+              <span>Show</span>
+              <select
+                bind:value={finishedPageSize}
+                class="px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-immich-primary"
+              >
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+              <span>per page</span>
+            </div>
+
+            <!-- Results count -->
+            <span class="text-sm text-gray-500 dark:text-gray-400">
+              {#if finishedFilter}
+                {filteredFinishedQueries.length} of {finishedQueries.length} queries
+              {:else}
+                {finishedQueries.length} queries
+              {/if}
+            </span>
+          </div>
+
           <div class="overflow-x-auto">
             <table class="w-full">
               <thead class="bg-gray-200 dark:bg-gray-700">
                 <tr>
                   <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                    PID
+                    <button
+                      type="button"
+                      class="flex items-center gap-1 hover:text-immich-primary dark:hover:text-immich-dark-primary"
+                      onclick={() => toggleSort('pid')}
+                    >
+                      PID
+                      {#if finishedSortColumn === 'pid'}
+                        <Icon icon={finishedSortDirection === 'asc' ? mdiArrowUp : mdiArrowDown} size="0.875em" />
+                      {/if}
+                    </button>
                   </th>
                   <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                    Duration
+                    <button
+                      type="button"
+                      class="flex items-center gap-1 hover:text-immich-primary dark:hover:text-immich-dark-primary"
+                      onclick={() => toggleSort('duration')}
+                    >
+                      Duration
+                      {#if finishedSortColumn === 'duration'}
+                        <Icon icon={finishedSortDirection === 'asc' ? mdiArrowUp : mdiArrowDown} size="0.875em" />
+                      {/if}
+                    </button>
                   </th>
                   <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                    Completed At
+                    <button
+                      type="button"
+                      class="flex items-center gap-1 hover:text-immich-primary dark:hover:text-immich-dark-primary"
+                      onclick={() => toggleSort('completedAt')}
+                    >
+                      Completed At
+                      {#if finishedSortColumn === 'completedAt'}
+                        <Icon icon={finishedSortDirection === 'asc' ? mdiArrowUp : mdiArrowDown} size="0.875em" />
+                      {/if}
+                    </button>
                   </th>
                   <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                    Query
+                    <button
+                      type="button"
+                      class="flex items-center gap-1 hover:text-immich-primary dark:hover:text-immich-dark-primary"
+                      onclick={() => toggleSort('query')}
+                    >
+                      Query
+                      {#if finishedSortColumn === 'query'}
+                        <Icon icon={finishedSortDirection === 'asc' ? mdiArrowUp : mdiArrowDown} size="0.875em" />
+                      {/if}
+                    </button>
                   </th>
                   <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                   </th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-200 dark:divide-gray-600">
-                {#each finishedQueries as finished, index (`${finished.pid}-${finished.completedAt}`)}
+                {#each paginatedFinishedQueries as finished (`${finished.pid}-${finished.completedAt}`)}
+                  {@const key = `${finished.pid}-${finished.completedAt}`}
+                  {@const isExpanded = expandedFinishedQueries.has(key)}
+                  {@const isLong = isQueryLong(finished.query)}
                   <tr class="hover:bg-gray-200/50 dark:hover:bg-gray-700/50">
-                    <td class="px-4 py-3 whitespace-nowrap text-sm font-mono dark:text-white">
+                    <td class="px-4 py-3 whitespace-nowrap text-sm font-mono dark:text-white align-top">
                       {finished.pid}
                     </td>
-                    <td class="px-4 py-3 whitespace-nowrap text-sm font-mono text-success-500">
+                    <td class="px-4 py-3 whitespace-nowrap text-sm font-mono text-success-500 align-top">
                       {formatDuration(finished.duration)}
                     </td>
-                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400 align-top">
                       {formatTime(finished.completedAt)}
                     </td>
                     <td class="px-4 py-3 text-sm dark:text-gray-200">
-                      <code class="text-xs break-all">{formatQuery(finished.query)}</code>
+                      <div class="flex items-start gap-2">
+                        <code class="text-xs break-all whitespace-pre-wrap flex-1 select-text">{formatQuery(finished.query, isExpanded)}</code>
+                        <div class="flex items-center gap-1 flex-shrink-0">
+                          {#if isLong}
+                            <button
+                              type="button"
+                              class="text-xs text-immich-primary dark:text-immich-dark-primary hover:underline"
+                              onclick={() => toggleFinishedQueryExpansion(key)}
+                            >
+                              {isExpanded ? '[collapse]' : '[expand]'}
+                            </button>
+                          {/if}
+                          <button
+                            type="button"
+                            class="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+                            onclick={() => copyToClipboard(finished.query)}
+                            title="Copy query"
+                          >
+                            <Icon icon={mdiContentCopy} size="0.875em" />
+                          </button>
+                        </div>
+                      </div>
                     </td>
-                    <td class="px-4 py-3 whitespace-nowrap">
+                    <td class="px-4 py-3 whitespace-nowrap align-top">
                       <button
                         class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
-                        onclick={() => removeFinishedQuery(index)}
+                        onclick={() => removeFinishedQueryByKey(key)}
                         title="Remove from history"
                       >
                         <Icon icon={mdiDelete} size="1em" />
                       </button>
                     </td>
                   </tr>
+                {:else}
+                  <tr>
+                    <td colspan="5" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                      No queries match your filter
+                    </td>
+                  </tr>
                 {/each}
               </tbody>
             </table>
           </div>
+
+          <!-- Pagination controls -->
+          {#if finishedTotalPages > 1}
+            <div class="px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-600">
+              <div class="text-sm text-gray-600 dark:text-gray-400">
+                Page {finishedCurrentPage} of {finishedTotalPages}
+              </div>
+              <div class="flex items-center gap-1">
+                <button
+                  type="button"
+                  class="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  onclick={() => goToPage(1)}
+                  disabled={finishedCurrentPage === 1}
+                  title="First page"
+                >
+                  <Icon icon={mdiChevronLeft} size="1em" />
+                  <Icon icon={mdiChevronLeft} size="1em" class="-ml-2" />
+                </button>
+                <button
+                  type="button"
+                  class="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  onclick={() => goToPage(finishedCurrentPage - 1)}
+                  disabled={finishedCurrentPage === 1}
+                  title="Previous page"
+                >
+                  <Icon icon={mdiChevronLeft} size="1em" />
+                </button>
+
+                <!-- Page numbers -->
+                {#each Array.from({ length: Math.min(5, finishedTotalPages) }, (_, i) => {
+                  const start = Math.max(1, Math.min(finishedCurrentPage - 2, finishedTotalPages - 4));
+                  return start + i;
+                }).filter(p => p <= finishedTotalPages) as page}
+                  <button
+                    type="button"
+                    class="px-2.5 py-1 text-sm rounded {page === finishedCurrentPage
+                      ? 'bg-immich-primary text-white dark:bg-immich-dark-primary'
+                      : 'hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'}"
+                    onclick={() => goToPage(page)}
+                  >
+                    {page}
+                  </button>
+                {/each}
+
+                <button
+                  type="button"
+                  class="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  onclick={() => goToPage(finishedCurrentPage + 1)}
+                  disabled={finishedCurrentPage === finishedTotalPages}
+                  title="Next page"
+                >
+                  <Icon icon={mdiChevronRight} size="1em" />
+                </button>
+                <button
+                  type="button"
+                  class="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  onclick={() => goToPage(finishedTotalPages)}
+                  disabled={finishedCurrentPage === finishedTotalPages}
+                  title="Last page"
+                >
+                  <Icon icon={mdiChevronRight} size="1em" />
+                  <Icon icon={mdiChevronRight} size="1em" class="-ml-2" />
+                </button>
+              </div>
+            </div>
+          {/if}
         {/if}
       </div>
     {/if}
@@ -385,7 +709,7 @@
           </p>
           <p class="mt-2 text-gray-700 dark:text-gray-300">
             <strong>Enhanced state display:</strong> Orange badges indicate queries waiting on locks. Blue badges show other wait events.
-            <strong>Finished queries:</strong> Recently completed queries are tracked in your browser's local storage and persist across sessions (up to 100 queries).
+            <strong>Finished queries:</strong> Recently completed queries are tracked in your browser's local storage and persist across sessions (up to 1000 queries). You can filter, sort, and paginate the history.
           </p>
         </div>
       </div>

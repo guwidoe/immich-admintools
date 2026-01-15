@@ -31,7 +31,7 @@
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {#each data.queues as queue}
         <a href="/queues/{encodeURIComponent(queue.name)}" class="block">
-          <Card class="hover:border-primary-400 transition-colors h-full">
+          <Card class="hover:border-primary-400 transition-colors h-full {queue.jobCounts.active > 0 ? 'bg-success-500/20 border-success-500/50' : ''}">
             <CardBody>
               <div class="flex items-center justify-between mb-3">
                 <h3 class="font-semibold text-dark-50">{queue.name}</h3>
