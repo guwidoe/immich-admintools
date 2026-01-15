@@ -43,7 +43,6 @@
   let finishedFilter = $state('');
 
   const STORAGE_KEY = 'monitoring_finished_queries';
-  const MAX_FINISHED_QUERIES = 1000;
 
   function loadFinishedQueries(): void {
     try {
@@ -84,7 +83,7 @@
 
     // Add new finished queries to the list
     if (finished.length > 0) {
-      finishedQueries = [...finished, ...finishedQueries].slice(0, MAX_FINISHED_QUERIES);
+      finishedQueries = [...finished, ...finishedQueries];
       saveFinishedQueries();
     }
 
@@ -709,7 +708,7 @@
           </p>
           <p class="mt-2 text-gray-700 dark:text-gray-300">
             <strong>Enhanced state display:</strong> Orange badges indicate queries waiting on locks. Blue badges show other wait events.
-            <strong>Finished queries:</strong> Recently completed queries are tracked in your browser's local storage and persist across sessions (up to 1000 queries). You can filter, sort, and paginate the history.
+            <strong>Finished queries:</strong> Recently completed queries are tracked in your browser's local storage and persist across sessions. You can filter, sort, and paginate the history.
           </p>
         </div>
       </div>

@@ -20,6 +20,13 @@ build/
 .claude/
 .cursor/
 
+# Agent and planning files (local use only)
+IMPLEMENTATION_PLAN.md
+AGENT_ORCHESTRATION.md
+cursor_chat_name_generation_instruction.md
+docs/TASK_BOARD.md
+docs/AUTONOMOUS_ORCHESTRATION.md
+
 # OS files
 .DS_Store
 Thumbs.db
