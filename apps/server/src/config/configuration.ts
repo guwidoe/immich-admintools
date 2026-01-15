@@ -23,6 +23,8 @@ export default () => ({
   autoHeal: {
     enabled: process.env.AUTO_HEAL_ENABLED === 'true',
     checkIntervalSeconds: parseInt(process.env.AUTO_HEAL_INTERVAL || '60', 10),
+    // Queues excluded from stuck job detection (can legitimately run for hours)
+    excludedQueues: (process.env.EXCLUDED_QUEUES || 'backup-database').split(',').map(s => s.trim()).filter(Boolean),
     thresholds: {
       faceDetection: parseInt(process.env.THRESHOLD_FACE_DETECTION || '300', 10),
       facialRecognition: parseInt(process.env.THRESHOLD_FACIAL_RECOGNITION || '300', 10),

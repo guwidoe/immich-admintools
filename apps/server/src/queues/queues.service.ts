@@ -116,6 +116,12 @@ export class QueuesService {
   }
 
   async clearStuckJobs(name: string): Promise<number> {
+    // Skip excluded queues (e.g., backup-database can legitimately run for hours)
+    if (this.isQueueExcluded(name)) {
+      console.log(`[QueuesService] Skipping stuck job detection for excluded queue: ${name}`);
+      return 0;
+    }
+
     const threshold = this.getStuckThreshold(name);
     const activeJobIds = await this.redis.getActiveJobIds(name);
 
@@ -137,16 +143,19 @@ export class QueuesService {
   }
 
   private async extendQueueInfo(queue: ImmichQueue): Promise<ExtendedQueueInfo> {
-    const threshold = this.getStuckThreshold(queue.name);
-    const activeJobIds = await this.redis.getActiveJobIds(queue.name);
-
     const stuckJobs: StuckJob[] = [];
 
-    for (const jobId of activeJobIds) {
-      const ageSeconds = await this.redis.getJobAge(queue.name, jobId);
+    // Skip stuck job detection for excluded queues (e.g., backup-database)
+    if (!this.isQueueExcluded(queue.name)) {
+      const threshold = this.getStuckThreshold(queue.name);
+      const activeJobIds = await this.redis.getActiveJobIds(queue.name);
 
-      if (ageSeconds !== null && ageSeconds > threshold) {
-        stuckJobs.push({ jobId, ageSeconds });
+      for (const jobId of activeJobIds) {
+        const ageSeconds = await this.redis.getJobAge(queue.name, jobId);
+
+        if (ageSeconds !== null && ageSeconds > threshold) {
+          stuckJobs.push({ jobId, ageSeconds });
+        }
       }
     }
 
@@ -172,5 +181,10 @@ export class QueuesService {
       .join('');
 
     return thresholds[normalizedName] ?? thresholds['default'] ?? 300;
+  }
+
+  private isQueueExcluded(queueName: string): boolean {
+    const excludedQueues = this.configService.get<string[]>('autoHeal.excludedQueues', []);
+    return excludedQueues.includes(queueName);
   }
 }

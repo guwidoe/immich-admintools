@@ -115,6 +115,7 @@ Then visit `http://localhost:2285`
 | `DB_DATABASE_NAME` | `immich` | PostgreSQL database name |
 | `AUTO_HEAL_ENABLED` | `false` | Automatically clear stuck jobs |
 | `AUTO_HEAL_INTERVAL` | `60` | Auto-heal check interval (seconds) |
+| `EXCLUDED_QUEUES` | `backup-database` | Queues excluded from stuck detection (comma-separated) |
 | `THRESHOLD_DEFAULT` | `300` | Default stuck job threshold (seconds) |
 | `THRESHOLD_FACE_DETECTION` | `300` | Face detection queue threshold |
 | `THRESHOLD_FACIAL_RECOGNITION` | `300` | Facial recognition queue threshold |
