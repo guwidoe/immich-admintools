@@ -1,0 +1,18 @@
+{
+  "thresholds": {
+    "default": 300,
+    "faceDetection": 300,
+    "facialRecognition": 300,
+    "thumbnailGeneration": 120,
+    "metadataExtraction": 180,
+    "videoConversion": 1800
+  },
+  "autoHeal": {
+    "enabled": false,
+    "intervalSeconds": 60
+  },
+  "excludedQueues": [
+    "library",
+    "backupDatabase"
+  ]
+}
