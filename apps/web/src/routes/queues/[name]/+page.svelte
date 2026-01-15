@@ -1,11 +1,16 @@
 <script lang="ts">
-  import { invalidateAll } from '$app/navigation';
+  import { onMount } from 'svelte';
+  import { page } from '$app/stores';
   import type { QueueStatus, JobInfo, JobState } from '$lib/types';
   import { pauseQueue, resumeQueue, fetchJobs } from '$lib/api/client';
   import { Alert, Badge, Button, Card, CardBody, Icon, LoadingSpinner } from '@immich/ui';
-  import { mdiArrowLeft, mdiAlertCircle, mdiRefresh } from '@mdi/js';
+  import { mdiArrowLeft, mdiAlertCircle, mdiRefresh, mdiLoading } from '@mdi/js';
 
-  let { data } = $props<{ data: { queue: QueueStatus | null; queueName: string; error: string | null } }>();
+  let queueName = $derived($page.params.name ?? '');
+
+  let loading = $state(true);
+  let error = $state<string | null>(null);
+  let queue = $state<QueueStatus | null>(null);
   let actionLoading = $state(false);
   let actionError = $state<string | null>(null);
 
@@ -18,14 +23,30 @@
   let currentPage = $state(0);
   const pageSize = 20;
 
-  async function loadJobs(state: JobState, page = 0) {
+  async function loadQueue() {
+    loading = true;
+    error = null;
+    try {
+      const response = await fetch(`/api/queues/${encodeURIComponent(queueName)}`);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      queue = await response.json();
+    } catch (e) {
+      error = e instanceof Error ? e.message : 'Failed to load queue';
+    } finally {
+      loading = false;
+    }
+  }
+
+  async function loadJobs(state: JobState, jobPage = 0) {
     jobsLoading = true;
     jobsError = null;
     try {
-      const response = await fetchJobs(data.queueName, state, page, pageSize);
+      const response = await fetchJobs(queueName, state, jobPage, pageSize);
       jobs = response.jobs;
       jobsTotal = response.total;
-      currentPage = page;
+      currentPage = jobPage;
     } catch (err) {
       jobsError = err instanceof Error ? err.message : 'Failed to load jobs';
       jobs = [];
@@ -53,28 +74,35 @@
     return `${(ms / 60000).toFixed(1)}m`;
   }
 
-  // Load jobs on mount
-  $effect(() => {
-    if (data.queue) {
+  onMount(async () => {
+    await loadQueue();
+    if (queue) {
       loadJobs(activeTab);
     }
   });
 
   async function handlePauseResume() {
-    if (!data.queue) return;
+    if (!queue) return;
     actionLoading = true;
     actionError = null;
     try {
-      if (data.queue.isPaused) {
-        await resumeQueue(data.queueName);
+      if (queue.isPaused) {
+        await resumeQueue(queueName);
       } else {
-        await pauseQueue(data.queueName);
+        await pauseQueue(queueName);
       }
-      await invalidateAll();
+      await loadQueue();
     } catch (err) {
       actionError = err instanceof Error ? err.message : 'Action failed';
     } finally {
       actionLoading = false;
+    }
+  }
+
+  async function handleRefresh() {
+    await loadQueue();
+    if (queue) {
+      loadJobs(activeTab, currentPage);
     }
   }
 </script>
@@ -85,19 +113,23 @@
       <Icon icon={mdiArrowLeft} size="20" />
     </a>
     <div>
-      <h1 class="text-2xl font-bold text-dark-50">{data.queueName}</h1>
+      <h1 class="text-2xl font-bold text-dark-50">{queueName}</h1>
       <p class="text-dark-400 mt-1">Queue details and management</p>
     </div>
   </div>
 
-  {#if data.error}
+  {#if loading}
+    <div class="flex items-center justify-center py-12">
+      <Icon icon={mdiLoading} size="32" class="animate-spin text-primary-400" />
+    </div>
+  {:else if error}
     <Alert color="danger">
       <div class="flex items-center gap-3">
         <Icon icon={mdiAlertCircle} size="20" />
-        <span>{data.error}</span>
+        <span>{error}</span>
       </div>
     </Alert>
-  {:else if data.queue}
+  {:else if queue}
     {#if actionError}
       <Alert color="danger">
         <span>{actionError}</span>
@@ -110,9 +142,9 @@
         <div class="flex items-center justify-between mb-4">
           <div class="flex items-center gap-3">
             <h2 class="text-lg font-semibold text-dark-50">Status</h2>
-            {#if data.queue.isPaused}
+            {#if queue.isPaused}
               <Badge color="warning">Paused</Badge>
-            {:else if data.queue.jobCounts.active > 0}
+            {:else if queue.jobCounts.active > 0}
               <Badge color="success">Active</Badge>
             {:else}
               <Badge color="secondary">Idle</Badge>
@@ -121,9 +153,9 @@
           <Button
             onclick={handlePauseResume}
             loading={actionLoading}
-            color={data.queue.isPaused ? 'success' : 'warning'}
+            color={queue.isPaused ? 'success' : 'warning'}
           >
-            {data.queue.isPaused ? 'Resume Queue' : 'Pause Queue'}
+            {queue.isPaused ? 'Resume Queue' : 'Pause Queue'}
           </Button>
         </div>
 
@@ -131,12 +163,12 @@
         <div class="grid grid-cols-2 gap-4 mb-4">
           <div class="p-4 bg-success-900/20 border border-success-800 rounded-lg">
             <p class="text-success-500 text-sm font-medium">Jobs Completed</p>
-            <p class="text-3xl font-bold text-success-500">{(data.queue.trackedStats?.completed ?? 0).toLocaleString()}</p>
+            <p class="text-3xl font-bold text-success-500">{(queue.trackedStats?.completed ?? 0).toLocaleString()}</p>
             <p class="text-xs text-dark-400 mt-1">Tracked since monitoring started</p>
           </div>
           <div class="p-4 bg-danger-900/20 border border-danger-800 rounded-lg">
             <p class="text-danger-500 text-sm font-medium">Jobs Failed</p>
-            <p class="text-3xl font-bold text-danger-500">{(data.queue.trackedStats?.failed ?? 0).toLocaleString()}</p>
+            <p class="text-3xl font-bold text-danger-500">{(queue.trackedStats?.failed ?? 0).toLocaleString()}</p>
             <p class="text-xs text-dark-400 mt-1">Tracked since monitoring started</p>
           </div>
         </div>
@@ -145,33 +177,33 @@
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div class="p-4 bg-dark-950 rounded-lg">
             <p class="text-dark-400 text-sm">Waiting</p>
-            <p class="text-2xl font-bold text-dark-50">{data.queue.jobCounts.waiting.toLocaleString()}</p>
+            <p class="text-2xl font-bold text-dark-50">{queue.jobCounts.waiting.toLocaleString()}</p>
           </div>
           <div class="p-4 bg-dark-950 rounded-lg">
             <p class="text-dark-400 text-sm">Active</p>
-            <p class="text-2xl font-bold text-dark-50">{data.queue.jobCounts.active.toLocaleString()}</p>
+            <p class="text-2xl font-bold text-dark-50">{queue.jobCounts.active.toLocaleString()}</p>
           </div>
           <div class="p-4 bg-dark-950 rounded-lg">
             <p class="text-dark-400 text-sm">In Queue (Failed)</p>
-            <p class="text-2xl font-bold {data.queue.jobCounts.failed > 0 ? 'text-danger-500' : 'text-dark-50'}">{data.queue.jobCounts.failed.toLocaleString()}</p>
+            <p class="text-2xl font-bold {queue.jobCounts.failed > 0 ? 'text-danger-500' : 'text-dark-50'}">{queue.jobCounts.failed.toLocaleString()}</p>
           </div>
           <div class="p-4 bg-dark-950 rounded-lg">
             <p class="text-dark-400 text-sm">Delayed</p>
-            <p class="text-2xl font-bold text-dark-50">{data.queue.jobCounts.delayed.toLocaleString()}</p>
+            <p class="text-2xl font-bold text-dark-50">{queue.jobCounts.delayed.toLocaleString()}</p>
           </div>
         </div>
       </CardBody>
     </Card>
 
     <!-- Stuck Jobs Section -->
-    {#if data.queue.stuckJobs && data.queue.stuckJobs.length > 0}
+    {#if queue.stuckJobs && queue.stuckJobs.length > 0}
       <Card class="border-warning-800 bg-warning-900/10">
         <CardBody>
           <h2 class="text-lg font-semibold text-warning-500 mb-4">
-            Stuck Jobs ({data.queue.stuckJobs.length})
+            Stuck Jobs ({queue.stuckJobs.length})
           </h2>
           <div class="space-y-2">
-            {#each data.queue.stuckJobs as job}
+            {#each queue.stuckJobs as job}
               <div class="p-3 bg-dark-950 rounded-lg flex items-center justify-between">
                 <div>
                   <p class="text-dark-50 font-mono text-sm">{job.jobId}</p>
@@ -197,7 +229,7 @@
           <Button
             size="small"
             variant="ghost"
-            onclick={() => loadJobs(activeTab, currentPage)}
+            onclick={handleRefresh}
             loading={jobsLoading}
           >
             <Icon icon={mdiRefresh} size="16" />
@@ -211,25 +243,25 @@
             onclick={() => switchTab('active')}
             class="px-4 py-2 text-sm font-medium transition-colors {activeTab === 'active' ? 'text-primary border-b-2 border-primary' : 'text-dark-400 hover:text-dark-50'}"
           >
-            Active ({data.queue.jobCounts.active})
+            Active ({queue.jobCounts.active})
           </button>
           <button
             onclick={() => switchTab('waiting')}
             class="px-4 py-2 text-sm font-medium transition-colors {activeTab === 'waiting' ? 'text-primary border-b-2 border-primary' : 'text-dark-400 hover:text-dark-50'}"
           >
-            Waiting ({data.queue.jobCounts.waiting})
+            Waiting ({queue.jobCounts.waiting})
           </button>
           <button
             onclick={() => switchTab('failed')}
             class="px-4 py-2 text-sm font-medium transition-colors {activeTab === 'failed' ? 'text-danger-500 border-b-2 border-danger-500' : 'text-dark-400 hover:text-dark-50'}"
           >
-            Failed ({data.queue.jobCounts.failed})
+            Failed ({queue.jobCounts.failed})
           </button>
           <button
             onclick={() => switchTab('delayed')}
             class="px-4 py-2 text-sm font-medium transition-colors {activeTab === 'delayed' ? 'text-warning-500 border-b-2 border-warning-500' : 'text-dark-400 hover:text-dark-50'}"
           >
-            Delayed ({data.queue.jobCounts.delayed})
+            Delayed ({queue.jobCounts.delayed})
           </button>
         </div>
 

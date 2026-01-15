@@ -1,41 +1,57 @@
 <script lang="ts">
-  import { invalidateAll } from '$app/navigation';
+  import { onMount } from 'svelte';
   import type { AllTrackedStats, TrackedQueueStats } from '$lib/types';
   import { resetStats } from '$lib/api/client';
   import { Alert, Button, Card, CardBody, Icon } from '@immich/ui';
   import { mdiRefresh, mdiAlertCircle, mdiChartBar } from '@mdi/js';
 
-  let { data } = $props<{ data: { stats: AllTrackedStats; error: string | null } }>();
+  let loading = $state(true);
+  let error = $state<string | null>(null);
+  let stats = $state<AllTrackedStats>({});
   let resetLoading = $state(false);
+
+  async function loadStats() {
+    try {
+      const response = await fetch('/api/stats');
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      stats = await response.json();
+      error = null;
+    } catch (e) {
+      error = e instanceof Error ? e.message : 'Failed to load stats';
+    } finally {
+      loading = false;
+    }
+  }
+
+  onMount(() => {
+    loadStats();
+  });
 
   // Calculate totals
   let totalCompleted = $derived(
-    (Object.values(data.stats) as TrackedQueueStats[]).reduce((sum, s) => sum + s.completed, 0)
+    (Object.values(stats) as TrackedQueueStats[]).reduce((sum, s) => sum + s.completed, 0)
   );
   let totalFailed = $derived(
-    (Object.values(data.stats) as TrackedQueueStats[]).reduce((sum, s) => sum + s.failed, 0)
+    (Object.values(stats) as TrackedQueueStats[]).reduce((sum, s) => sum + s.failed, 0)
   );
 
   // Get queues with activity, sorted by completed desc
   let activeQueues = $derived(
-    (Object.entries(data.stats) as [string, TrackedQueueStats][])
+    (Object.entries(stats) as [string, TrackedQueueStats][])
       .filter(([_, s]) => s.completed > 0 || s.failed > 0)
       .sort((a, b) => b[1].completed - a[1].completed)
   );
 
-  // Get most recent update
-  let lastUpdated = $derived(() => {
-    const updates = (Object.values(data.stats) as TrackedQueueStats[])
-      .map((s) => s.lastUpdated)
-      .filter((d): d is string => d !== null)
-      .map((d) => new Date(d));
-    if (updates.length === 0) return null;
-    return new Date(Math.max(...updates.map((d) => d.getTime())));
-  });
-
   function formatDate(dateStr: string | null): string {
     if (!dateStr) return 'Never';
     return new Date(dateStr).toLocaleString();
+  }
+
+  async function handleRefresh() {
+    loading = true;
+    await loadStats();
   }
 
   async function handleResetAll() {
@@ -45,7 +61,7 @@
     resetLoading = true;
     try {
       await resetStats();
-      await invalidateAll();
+      await loadStats();
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to reset stats');
     } finally {
@@ -59,7 +75,7 @@
     }
     try {
       await resetStats(queueName);
-      await invalidateAll();
+      await loadStats();
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to reset stats');
     }
@@ -73,7 +89,7 @@
       <p class="text-dark-400 mt-1">View completed and failed job history</p>
     </div>
     <div class="flex items-center gap-2">
-      <Button size="small" variant="ghost" onclick={() => invalidateAll()}>
+      <Button size="small" variant="ghost" onclick={handleRefresh} disabled={loading}>
         <Icon icon={mdiRefresh} size="16" />
         Refresh
       </Button>
@@ -89,28 +105,36 @@
     </div>
   </div>
 
-  {#if data.error}
+  {#if error}
     <Alert color="danger">
       <div class="flex items-center gap-3">
         <Icon icon={mdiAlertCircle} size="20" />
-        <span>{data.error}</span>
+        <span>{error}</span>
       </div>
     </Alert>
   {/if}
 
-  <!-- Summary Cards -->
+  <!-- Summary Cards - always render structure -->
   <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
     <Card>
       <CardBody>
         <h3 class="text-dark-50 font-medium mb-2">Completed Jobs</h3>
-        <p class="text-3xl font-bold text-success-500">{totalCompleted.toLocaleString()}</p>
+        {#if loading}
+          <p class="text-3xl font-bold text-dark-400">--</p>
+        {:else}
+          <p class="text-3xl font-bold text-success-500">{totalCompleted.toLocaleString()}</p>
+        {/if}
         <p class="text-dark-400 text-sm">Since monitoring started</p>
       </CardBody>
     </Card>
     <Card>
       <CardBody>
         <h3 class="text-dark-50 font-medium mb-2">Failed Jobs</h3>
-        <p class="text-3xl font-bold text-danger-500">{totalFailed.toLocaleString()}</p>
+        {#if loading}
+          <p class="text-3xl font-bold text-dark-400">--</p>
+        {:else}
+          <p class="text-3xl font-bold text-danger-500">{totalFailed.toLocaleString()}</p>
+        {/if}
         <p class="text-dark-400 text-sm">Since monitoring started</p>
       </CardBody>
     </Card>
@@ -118,7 +142,9 @@
       <CardBody>
         <h3 class="text-dark-50 font-medium mb-2">Success Rate</h3>
         <p class="text-3xl font-bold text-dark-50">
-          {#if totalCompleted + totalFailed > 0}
+          {#if loading}
+            --
+          {:else if totalCompleted + totalFailed > 0}
             {((totalCompleted / (totalCompleted + totalFailed)) * 100).toFixed(1)}%
           {:else}
             --
@@ -129,12 +155,40 @@
     </Card>
   </div>
 
-  <!-- Per-Queue Stats -->
+  <!-- Per-Queue Stats - always render structure -->
   <Card>
     <CardBody>
       <h2 class="text-lg font-semibold text-dark-50 mb-4">Stats by Queue</h2>
 
-      {#if activeQueues.length === 0}
+      {#if loading}
+        <!-- Skeleton rows while loading -->
+        <div class="overflow-x-auto">
+          <table class="w-full">
+            <thead>
+              <tr class="text-left text-dark-400 text-sm border-b border-dark-700">
+                <th class="pb-3 font-medium">Queue</th>
+                <th class="pb-3 font-medium text-right">Completed</th>
+                <th class="pb-3 font-medium text-right">Failed</th>
+                <th class="pb-3 font-medium text-right">Success Rate</th>
+                <th class="pb-3 font-medium text-right">Last Activity</th>
+                <th class="pb-3 font-medium text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-dark-700">
+              {#each [1, 2, 3, 4] as _}
+                <tr class="animate-pulse">
+                  <td class="py-3"><div class="h-4 w-32 bg-dark-700 rounded"></div></td>
+                  <td class="py-3 text-right"><div class="h-4 w-16 bg-dark-700 rounded ml-auto"></div></td>
+                  <td class="py-3 text-right"><div class="h-4 w-12 bg-dark-700 rounded ml-auto"></div></td>
+                  <td class="py-3 text-right"><div class="h-4 w-14 bg-dark-700 rounded ml-auto"></div></td>
+                  <td class="py-3 text-right"><div class="h-4 w-28 bg-dark-700 rounded ml-auto"></div></td>
+                  <td class="py-3 text-right"><div class="h-4 w-10 bg-dark-700 rounded ml-auto"></div></td>
+                </tr>
+              {/each}
+            </tbody>
+          </table>
+        </div>
+      {:else if activeQueues.length === 0}
         <div class="text-center py-8 text-dark-400">
           <Icon icon={mdiChartBar} size="48" class="mx-auto mb-4 opacity-50" />
           <p>No job activity tracked yet.</p>
@@ -154,9 +208,9 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-dark-700">
-              {#each activeQueues as [queueName, stats]}
-                {@const successRate = stats.completed + stats.failed > 0
-                  ? ((stats.completed / (stats.completed + stats.failed)) * 100).toFixed(1)
+              {#each activeQueues as [queueName, queueStats]}
+                {@const successRate = queueStats.completed + queueStats.failed > 0
+                  ? ((queueStats.completed / (queueStats.completed + queueStats.failed)) * 100).toFixed(1)
                   : '--'}
                 <tr class="hover:bg-dark-800/50">
                   <td class="py-3">
@@ -165,10 +219,10 @@
                     </a>
                   </td>
                   <td class="py-3 text-right text-success-500 font-mono">
-                    {stats.completed.toLocaleString()}
+                    {queueStats.completed.toLocaleString()}
                   </td>
                   <td class="py-3 text-right text-danger-500 font-mono">
-                    {stats.failed.toLocaleString()}
+                    {queueStats.failed.toLocaleString()}
                   </td>
                   <td class="py-3 text-right">
                     <span class="{parseFloat(successRate) >= 95 ? 'text-success-500' : parseFloat(successRate) >= 80 ? 'text-warning-500' : 'text-danger-500'}">
@@ -176,7 +230,7 @@
                     </span>
                   </td>
                   <td class="py-3 text-right text-dark-400 text-sm">
-                    {formatDate(stats.lastUpdated)}
+                    {formatDate(queueStats.lastUpdated)}
                   </td>
                   <td class="py-3 text-right">
                     <button
