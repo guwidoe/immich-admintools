@@ -27,6 +27,16 @@ cursor_chat_name_generation_instruction.md
 docs/TASK_BOARD.md
 docs/AUTONOMOUS_ORCHESTRATION.md
 CHANGELOG.md
+docs/ARCHITECTURE.md
+docs/modules/
+scripts/orchestrator.py
+
+# External reference files
+immich-openapi-specs.json
+immich_api_specs/
+
+# npm lock file (project uses pnpm)
+package-lock.json
 
 # OS files
 .DS_Store
