@@ -1,6 +1,11 @@
 # Immich Admin Tools
 
 <p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-AGPL--3.0-blue.svg" alt="License: AGPL-3.0"></a>
+  <a href="https://github.com/immich-app/immich"><img src="https://img.shields.io/badge/Immich-v2.4.0+-blueviolet" alt="Immich v2.4.0+"></a>
+</p>
+
+<p align="center">
   <strong>Enhanced job queue management and monitoring for Immich</strong>
 </p>
 
@@ -146,6 +151,15 @@ pnpm dev
 # Build for production
 pnpm build
 ```
+
+## Contributing
+
+Contributions are welcome! If you find a bug or have a feature request:
+
+1. **Report issues** on [GitHub Issues](https://github.com/your-org/immich-admin-tools/issues)
+2. **Submit PRs** - Fork the repo, create a feature branch, and open a pull request
+
+Please ensure your code follows the existing style and includes appropriate tests.
 
 ## Why a Separate Tool?
 
