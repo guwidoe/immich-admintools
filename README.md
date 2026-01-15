@@ -1,7 +1,7 @@
 # Immich Admin Tools
 
 <p align="center">
-  <strong>🔧 Enhanced job queue management and monitoring for Immich</strong>
+  <strong>Enhanced job queue management and monitoring for Immich</strong>
 </p>
 
 <p align="center">
@@ -10,8 +10,6 @@
 
 ---
 
-> ⚠️ **Work in Progress** - This project is currently in the planning/early development phase. See [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) for the full roadmap.
-
 ## The Problem
 
 If you run [Immich](https://immich.app/) with a large photo library (100k+ photos), you've likely experienced:
@@ -19,26 +17,49 @@ If you run [Immich](https://immich.app/) with a large photo library (100k+ photo
 - **Stuck jobs** - Jobs show as "active" for hours without completing
 - **Silent failures** - No indication of *why* processing stopped
 - **Manual recovery** - Having to run Redis CLI commands to clear zombie jobs
-- **Poor visibility** - Can't see which files are causing problems or get processing ETAs
+- **Poor visibility** - Can't see which files are causing problems
+- **Duplicate people** - Similar person entries that need manual merging
 
 This happens because BullMQ (Immich's job queue) marks jobs as "active" when a worker picks them up, but if that worker hangs (corrupted file, memory issue, unexpected restart), the job stays "active" forever—eventually blocking the entire queue.
 
 ## The Solution
 
-**Immich Admin Tools** is a companion dashboard that provides:
+**Immich Admin Tools** is a companion dashboard that runs alongside your Immich instance, providing:
 
+### Queue Management
 | Feature | Description |
 |---------|-------------|
-| **📊 Real-time Dashboard** | Live queue status with processing rates and ETAs |
-| **🔍 Stuck Job Detection** | Automatically detect jobs running longer than expected |
-| **⚡ One-Click Recovery** | Clear stuck jobs without touching Redis CLI |
-| **📁 Asset Identification** | See exactly which files are causing problems |
-| **🔄 Auto-Heal Mode** | Optionally auto-clear stuck jobs |
-| **🔔 Alerts** | Webhook notifications when things go wrong |
+| **Real-time Dashboard** | Live queue status with job counts and processing state |
+| **Stuck Job Detection** | Automatically detect jobs running longer than expected |
+| **One-Click Recovery** | Clear stuck jobs without touching Redis CLI |
+| **Asset Identification** | See exactly which files are causing problems |
+| **Queue Control** | Pause/resume individual queues |
+| **Job Browser** | Browse active, waiting, failed, and delayed jobs with pagination |
+| **Auto-Heal Mode** | Optionally auto-clear stuck jobs on a schedule |
 
-## Screenshots
+### People Management
+| Feature | Description |
+|---------|-------------|
+| **Duplicate Detection** | Find people with similar names using fuzzy matching |
+| **Similarity Clustering** | Adjustable threshold (50-100%) for grouping duplicates |
+| **Face Previews** | See actual face thumbnails before merging |
+| **Bulk Merge** | Merge multiple clusters at once with progress tracking |
+| **Selective Control** | Choose which people to include in each merge |
 
-*Coming soon*
+### Database Monitoring
+| Feature | Description |
+|---------|-------------|
+| **Live Query Monitoring** | See active PostgreSQL queries in real-time |
+| **Connection Stats** | Monitor active and idle database connections |
+| **Query History** | Persistent log of finished queries with search and filtering |
+| **Lock Detection** | Identify wait events and lock contention |
+
+### Statistics & History
+| Feature | Description |
+|---------|-------------|
+| **Job Statistics** | Cumulative completed/failed counts per queue |
+| **Success Rates** | Color-coded success rate tracking |
+| **Historical View** | Track job completion patterns over time |
 
 ## Quick Start
 
@@ -52,6 +73,12 @@ services:
       - IMMICH_API_URL=http://immich_server:2283
       - IMMICH_API_KEY=${IMMICH_API_KEY}
       - REDIS_URL=redis://immich_redis:6379
+      # Optional: Database monitoring (requires direct PostgreSQL access)
+      - DB_HOST=immich_postgres
+      - DB_PORT=5432
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_DATABASE_NAME=immich
     ports:
       - "2285:3000"
     depends_on:
@@ -61,40 +88,64 @@ services:
 
 Then visit `http://localhost:2285`
 
+## Configuration
+
+### Required Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `IMMICH_API_URL` | URL to your Immich server (e.g., `http://immich_server:2283`) |
+| `IMMICH_API_KEY` | API key generated in Immich (Profile > API Keys) |
+| `REDIS_URL` | Redis connection URL (e.g., `redis://immich_redis:6379`) |
+
+### Optional Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PORT` | `3000` | Server port |
+| `DB_HOST` | - | PostgreSQL host (enables database monitoring) |
+| `DB_PORT` | `5432` | PostgreSQL port |
+| `DB_USERNAME` | - | PostgreSQL username |
+| `DB_PASSWORD` | - | PostgreSQL password |
+| `DB_DATABASE_NAME` | `immich` | PostgreSQL database name |
+| `AUTO_HEAL_ENABLED` | `false` | Automatically clear stuck jobs |
+| `AUTO_HEAL_INTERVAL` | `60` | Auto-heal check interval (seconds) |
+| `THRESHOLD_DEFAULT` | `300` | Default stuck job threshold (seconds) |
+| `THRESHOLD_FACE_DETECTION` | `300` | Face detection queue threshold |
+| `THRESHOLD_FACIAL_RECOGNITION` | `300` | Facial recognition queue threshold |
+| `THRESHOLD_THUMBNAIL` | `120` | Thumbnail generation threshold |
+| `THRESHOLD_METADATA` | `180` | Metadata extraction threshold |
+| `THRESHOLD_VIDEO` | `1800` | Video conversion threshold |
+
 ## Requirements
 
-- Immich v2.4.0+ (uses the new `/queues` API)
+- Immich v2.4.0+ (uses the `/queues` API)
 - Docker
-- An Immich API key (generate in Immich: Profile → API Keys)
+- An Immich API key (generate in Immich: Profile > API Keys)
+- Network access to Immich's Redis instance
+- (Optional) Network access to PostgreSQL for database monitoring
 
 ## Tech Stack
 
 Built to feel native to Immich:
 
-- **Frontend**: SvelteKit + [@immich/ui](https://ui.immich.app)
-- **Backend**: NestJS (TypeScript)
+- **Frontend**: SvelteKit 5 + Svelte 5 + [@immich/ui](https://ui.immich.app)
+- **Backend**: NestJS 10 (TypeScript)
 - **API**: [@immich/sdk](https://www.npmjs.com/package/@immich/sdk)
-- **Styling**: Tailwind CSS
+- **Styling**: Tailwind CSS 4
 
-## Roadmap
+## Development
 
-- [x] Planning & architecture
-- [ ] **Phase 1**: Core dashboard + stuck job recovery
-- [ ] **Phase 2**: Job history & statistics
-- [ ] **Phase 3**: Auto-heal mode + notifications
-- [ ] **Phase 4**: Problem asset management
+```bash
+# Install dependencies
+pnpm install
 
-See [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) for detailed specifications.
+# Start development servers
+pnpm dev
 
-## Contributing
-
-This project is in early development. Contributions welcome!
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+# Build for production
+pnpm build
+```
 
 ## Why a Separate Tool?
 
@@ -122,5 +173,5 @@ This is the same license as Immich itself, ensuring compatibility.
 ---
 
 <p align="center">
-  Made with ❤️ by the Immich community
+  Made with care by the Immich community
 </p>
