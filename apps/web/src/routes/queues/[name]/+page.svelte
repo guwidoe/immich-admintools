@@ -112,8 +112,10 @@
             <h2 class="text-lg font-semibold text-dark-50">Status</h2>
             {#if data.queue.isPaused}
               <Badge color="warning">Paused</Badge>
-            {:else}
+            {:else if data.queue.jobCounts.active > 0}
               <Badge color="success">Active</Badge>
+            {:else}
+              <Badge color="secondary">Idle</Badge>
             {/if}
           </div>
           <Button

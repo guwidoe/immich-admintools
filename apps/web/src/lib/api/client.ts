@@ -198,3 +198,35 @@ export function streamDatabaseStats(
   // Return cleanup function
   return () => eventSource.close();
 }
+
+// Settings API
+export interface JobThresholds {
+  default: number;
+  faceDetection: number;
+  facialRecognition: number;
+  thumbnailGeneration: number;
+  metadataExtraction: number;
+  videoConversion: number;
+}
+
+export interface AutoHealSettings {
+  enabled: boolean;
+  intervalSeconds: number;
+}
+
+export interface AppSettings {
+  thresholds: JobThresholds;
+  autoHeal: AutoHealSettings;
+  excludedQueues: string[];
+}
+
+export async function fetchSettings(): Promise<AppSettings> {
+  return request<AppSettings>('/settings');
+}
+
+export async function updateSettings(updates: Partial<AppSettings>): Promise<AppSettings> {
+  return request<AppSettings>('/settings', {
+    method: 'PATCH',
+    body: JSON.stringify(updates)
+  });
+}

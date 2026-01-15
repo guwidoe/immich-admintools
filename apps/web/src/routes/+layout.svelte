@@ -15,10 +15,10 @@
   let mounted = $state(false);
 
   const navItems = [
-    { href: '/', title: 'Dashboard', icon: mdiViewDashboard },
+    { href: '/', title: 'Jobs Dashboard', icon: mdiViewDashboard },
+    { href: '/history', title: 'Job History', icon: mdiHistory },
     { href: '/people', title: 'People', icon: mdiAccountMultiple },
     { href: '/monitoring', title: 'Monitoring', icon: mdiChartTimelineVariant },
-    { href: '/history', title: 'History', icon: mdiHistory },
     { href: '/settings', title: 'Settings', icon: mdiCog }
   ];
 
@@ -72,7 +72,7 @@
         {/if}
         <div>
           <h1 class="text-lg font-bold">Admin Tools</h1>
-          <p class="text-xs text-gray-500 dark:text-gray-400">Queue Management</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400">for Immich</p>
         </div>
       </div>
 
@@ -113,7 +113,7 @@
     <header class="h-16 border-b flex items-center justify-between px-6">
       <h2 class="text-lg font-semibold">
         {#if currentPath === '/'}
-          Dashboard
+          Jobs Dashboard
         {:else if currentPath.startsWith('/queues/')}
           Queue Details
         {:else if currentPath === '/people'}

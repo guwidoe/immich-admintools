@@ -1,12 +1,25 @@
+import type { AppSettings } from '$lib/api/client';
+
 export async function load({ fetch }) {
   try {
-    const response = await fetch('/api/queues');
-    if (!response.ok) {
-      return { queues: [], error: `HTTP ${response.status}` };
-    }
-    const queues = await response.json();
-    return { queues, error: null };
+    const [queuesResponse, settingsResponse] = await Promise.all([
+      fetch('/api/queues'),
+      fetch('/api/settings')
+    ]);
+
+    const queues = queuesResponse.ok ? await queuesResponse.json() : [];
+    const settings: AppSettings | null = settingsResponse.ok ? await settingsResponse.json() : null;
+
+    return {
+      queues,
+      settings,
+      error: queuesResponse.ok ? null : `HTTP ${queuesResponse.status}`
+    };
   } catch (e) {
-    return { queues: [], error: e instanceof Error ? e.message : 'Unknown error' };
+    return {
+      queues: [],
+      settings: null,
+      error: e instanceof Error ? e.message : 'Unknown error'
+    };
   }
 }

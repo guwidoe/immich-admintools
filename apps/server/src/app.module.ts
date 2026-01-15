@@ -10,6 +10,7 @@ import { WebsocketModule } from './websocket/websocket.module';
 import { StatsModule } from './stats/stats.module';
 import { PeopleModule } from './people/people.module';
 import { MonitoringModule } from './monitoring/monitoring.module';
+import { SettingsModule } from './settings/settings.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { MonitoringModule } from './monitoring/monitoring.module';
     }),
     RedisModule,
     ImmichModule,
+    SettingsModule,
     StatsModule,
     QueuesModule,
     HealthModule,

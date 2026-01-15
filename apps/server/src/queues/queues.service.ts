@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { ImmichApiService, ImmichQueue } from '../immich/immich-api.service';
 import { RedisService } from '../redis/redis.service';
 import { StatsService } from '../stats/stats.service';
+import { SettingsService } from '../settings/settings.service';
 
 export interface ExtendedQueueInfo extends ImmichQueue {
   stuckJobs: StuckJob[];
@@ -39,8 +39,8 @@ export class QueuesService {
   constructor(
     private readonly immichApi: ImmichApiService,
     private readonly redis: RedisService,
-    private readonly configService: ConfigService,
     private readonly statsService: StatsService,
+    private readonly settingsService: SettingsService,
   ) {}
 
   async getAllQueues(): Promise<ExtendedQueueInfo[]> {
@@ -117,12 +117,12 @@ export class QueuesService {
 
   async clearStuckJobs(name: string): Promise<number> {
     // Skip excluded queues (e.g., backup-database can legitimately run for hours)
-    if (this.isQueueExcluded(name)) {
+    if (this.settingsService.isQueueExcluded(name)) {
       console.log(`[QueuesService] Skipping stuck job detection for excluded queue: ${name}`);
       return 0;
     }
 
-    const threshold = this.getStuckThreshold(name);
+    const threshold = this.settingsService.getThresholdForQueue(name);
     const activeJobIds = await this.redis.getActiveJobIds(name);
 
     let clearedCount = 0;
@@ -146,8 +146,8 @@ export class QueuesService {
     const stuckJobs: StuckJob[] = [];
 
     // Skip stuck job detection for excluded queues (e.g., backup-database)
-    if (!this.isQueueExcluded(queue.name)) {
-      const threshold = this.getStuckThreshold(queue.name);
+    if (!this.settingsService.isQueueExcluded(queue.name)) {
+      const threshold = this.settingsService.getThresholdForQueue(queue.name);
       const activeJobIds = await this.redis.getActiveJobIds(queue.name);
 
       for (const jobId of activeJobIds) {
@@ -167,24 +167,5 @@ export class QueuesService {
       stuckJobs,
       trackedStats,
     };
-  }
-
-  private getStuckThreshold(queueName: string): number {
-    const thresholds = this.configService.get<Record<string, number>>('autoHeal.thresholds', {});
-
-    // Convert queue name to threshold key (e.g., 'face-detection' -> 'faceDetection')
-    const normalizedName = queueName
-      .split('-')
-      .map((part, index) =>
-        index === 0 ? part : part.charAt(0).toUpperCase() + part.slice(1)
-      )
-      .join('');
-
-    return thresholds[normalizedName] ?? thresholds['default'] ?? 300;
-  }
-
-  private isQueueExcluded(queueName: string): boolean {
-    const excludedQueues = this.configService.get<string[]>('autoHeal.excludedQueues', []);
-    return excludedQueues.includes(queueName);
   }
 }
