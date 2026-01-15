@@ -91,3 +91,42 @@ export interface MergeResult {
   results: BulkIdResult[];
   success: boolean;
 }
+
+export interface FaceWithAsset {
+  id: string;
+  assetId: string;
+  boundingBox: {
+    x1: number;
+    y1: number;
+    x2: number;
+    y2: number;
+  };
+}
+
+// Monitoring types
+export interface ActiveQuery {
+  pid: number;
+  username: string;
+  database: string;
+  state: string;
+  query: string;
+  queryStart: string | null;
+  duration: number | null;
+  waitEventType: string | null;
+  waitEvent: string | null;
+}
+
+export interface FinishedQuery {
+  pid: number;
+  query: string;
+  duration: number;
+  completedAt: number; // timestamp in ms
+  username: string;
+}
+
+export interface DatabaseStats {
+  activeConnections: number;
+  idleConnections: number;
+  totalConnections: number;
+  activeQueries: ActiveQuery[];
+}

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ImmichApiService } from '../immich/immich-api.service';
-import type { Person, BulkIdResult } from './people.types';
+import type { Person, BulkIdResult, FaceWithAsset } from './people.types';
 
 @Injectable()
 export class PeopleService {
@@ -39,5 +39,16 @@ export class PeopleService {
 
   async getPersonThumbnail(id: string): Promise<Buffer | null> {
     return this.immichApiService.getPersonThumbnail(id);
+  }
+
+  async getPersonFaces(personId: string): Promise<FaceWithAsset[]> {
+    console.log(`[PeopleService] Fetching faces for person ${personId}`);
+    const faces = await this.immichApiService.getPersonFaces(personId);
+    console.log(`[PeopleService] Found ${faces.length} faces`);
+    return faces;
+  }
+
+  async getAssetThumbnail(assetId: string, size: 'preview' | 'thumbnail' = 'thumbnail'): Promise<Buffer | null> {
+    return this.immichApiService.getAssetThumbnail(assetId, size);
   }
 }

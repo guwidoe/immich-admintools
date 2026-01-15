@@ -23,6 +23,7 @@
     "@nestjs/websockets": "^10.4.15",
     "bullmq": "^5.66.5",
     "ioredis": "^5.4.2",
+    "pg": "^8.13.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "socket.io": "^4.8.3"
@@ -32,6 +33,7 @@
     "@nestjs/schematics": "^10.2.3",
     "@types/express": "^5.0.0",
     "@types/node": "^22.10.6",
+    "@types/pg": "^8.11.10",
     "@typescript-eslint/eslint-plugin": "^8.21.0",
     "@typescript-eslint/parser": "^8.21.0",
     "eslint": "^9.18.0",

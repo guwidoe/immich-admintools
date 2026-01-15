@@ -5,6 +5,7 @@ import type {
   BulkIdResult,
   ImmichPeopleResponse,
   PersonStatistics,
+  FaceWithAsset,
 } from '../people/people.types';
 
 export interface ImmichQueue {
@@ -238,5 +239,123 @@ export class ImmichApiService implements OnModuleInit {
     }
 
     return results;
+  }
+
+  async getPersonFaces(personId: string): Promise<FaceWithAsset[]> {
+    // Use the search/metadata endpoint with personIds to get assets containing this person
+    interface SearchAssetItem {
+      id: string;
+    }
+
+    interface SearchMetadataResponse {
+      assets: {
+        items: SearchAssetItem[];
+        count: number;
+        total: number;
+        nextPage: string | null;
+      };
+    }
+
+    // Response from GET /faces?id={assetId}
+    interface AssetFaceResponse {
+      id: string;
+      boundingBoxX1: number;
+      boundingBoxX2: number;
+      boundingBoxY1: number;
+      boundingBoxY2: number;
+      imageWidth: number;
+      imageHeight: number;
+      person: {
+        id: string;
+        name: string;
+      } | null;
+    }
+
+    const response = await this.fetch<SearchMetadataResponse>(
+      `/api/search/metadata`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          personIds: [personId],
+          size: 100,
+        }),
+      },
+    );
+
+    if (!response || !response.assets || !response.assets.items) {
+      return [];
+    }
+
+    // For each asset, fetch the faces and find the one belonging to this person
+    const faces: FaceWithAsset[] = [];
+    const BATCH_SIZE = 10;
+
+    for (let i = 0; i < response.assets.items.length; i += BATCH_SIZE) {
+      const batch = response.assets.items.slice(i, i + BATCH_SIZE);
+      const batchResults = await Promise.all(
+        batch.map(async (asset) => {
+          const assetFaces = await this.fetch<AssetFaceResponse[]>(
+            `/api/faces?id=${asset.id}`,
+          );
+
+          if (!assetFaces) {
+            return null;
+          }
+
+          // Find the face belonging to this person
+          const personFace = assetFaces.find(
+            (face) => face.person?.id === personId,
+          );
+
+          if (!personFace) {
+            return null;
+          }
+
+          // Convert pixel coordinates to normalized percentages (0-1)
+          return {
+            id: personFace.id,
+            assetId: asset.id,
+            boundingBox: {
+              x1: personFace.boundingBoxX1 / personFace.imageWidth,
+              y1: personFace.boundingBoxY1 / personFace.imageHeight,
+              x2: personFace.boundingBoxX2 / personFace.imageWidth,
+              y2: personFace.boundingBoxY2 / personFace.imageHeight,
+            },
+          } as FaceWithAsset;
+        }),
+      );
+
+      faces.push(...batchResults.filter((f): f is FaceWithAsset => f !== null));
+    }
+
+    return faces;
+  }
+
+  async getAssetThumbnail(assetId: string, size: 'preview' | 'thumbnail' = 'thumbnail'): Promise<Buffer | null> {
+    const url = `${this.apiUrl}/api/assets/${assetId}/thumbnail?size=${size}`;
+
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'x-api-key': this.apiKey,
+        },
+      });
+
+      if (!response.ok) {
+        console.error(
+          `[ImmichApiService] Asset thumbnail error: ${response.status} ${response.statusText}`,
+        );
+        return null;
+      }
+
+      const arrayBuffer = await response.arrayBuffer();
+      return Buffer.from(arrayBuffer);
+    } catch (error) {
+      console.error(
+        `[ImmichApiService] Asset thumbnail request failed for ${assetId}:`,
+        error,
+      );
+      return null;
+    }
   }
 }

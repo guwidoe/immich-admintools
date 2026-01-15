@@ -13,7 +13,7 @@ import {
 import { Response } from 'express';
 import { Observable, Subject } from 'rxjs';
 import { PeopleService } from './people.service';
-import type { Person, MergePeopleDto, BulkIdResult } from './people.types';
+import type { Person, MergePeopleDto, BulkIdResult, FaceWithAsset } from './people.types';
 
 @Controller('people')
 export class PeopleController {
@@ -75,6 +75,33 @@ export class PeopleController {
 
     if (!thumbnail) {
       res.status(HttpStatus.NOT_FOUND).send('Thumbnail not found');
+      return;
+    }
+
+    res.set({
+      'Content-Type': 'image/jpeg',
+      'Content-Length': thumbnail.length,
+      'Cache-Control': 'public, max-age=86400',
+    });
+    res.send(thumbnail);
+  }
+
+  @Get(':id/faces')
+  async getPersonFaces(@Param('id') id: string): Promise<FaceWithAsset[]> {
+    return this.peopleService.getPersonFaces(id);
+  }
+
+  @Get('assets/:assetId/thumbnail')
+  async getAssetThumbnail(
+    @Param('assetId') assetId: string,
+    @Query('size') size?: string,
+    @Res() res?: Response,
+  ): Promise<void> {
+    const thumbnailSize = size === 'preview' ? 'preview' : 'thumbnail';
+    const thumbnail = await this.peopleService.getAssetThumbnail(assetId, thumbnailSize);
+
+    if (!thumbnail || !res) {
+      res?.status(HttpStatus.NOT_FOUND).send('Thumbnail not found');
       return;
     }
 

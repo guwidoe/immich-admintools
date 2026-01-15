@@ -1,4 +1,4 @@
-import type { HealthStatus, QueueStatus, JobsResponse, JobState, AllTrackedStats, Person, BulkIdResult } from '$lib/types';
+import type { HealthStatus, QueueStatus, JobsResponse, JobState, AllTrackedStats, Person, BulkIdResult, DatabaseStats, FaceWithAsset } from '$lib/types';
 
 const API_BASE = '/api';
 
@@ -152,4 +152,49 @@ export async function mergePeople(primaryId: string, ids: string[]): Promise<Bul
 
 export function getPersonThumbnailUrl(personId: string): string {
   return `${API_BASE}/people/${encodeURIComponent(personId)}/thumbnail`;
+}
+
+export async function fetchPersonFaces(personId: string): Promise<FaceWithAsset[]> {
+  return request<FaceWithAsset[]>(`/people/${encodeURIComponent(personId)}/faces`);
+}
+
+export function getAssetThumbnailUrl(assetId: string, size: 'preview' | 'thumbnail' = 'thumbnail'): string {
+  return `${API_BASE}/people/assets/${encodeURIComponent(assetId)}/thumbnail?size=${size}`;
+}
+
+// Monitoring API
+export async function fetchMonitoringStatus(): Promise<{ available: boolean }> {
+  return request<{ available: boolean }>('/monitoring/status');
+}
+
+export async function fetchDatabaseStats(): Promise<DatabaseStats | { error: string }> {
+  return request<DatabaseStats | { error: string }>('/monitoring/database');
+}
+
+export interface DatabaseStatsMessage {
+  type: 'stats' | 'error';
+  stats?: DatabaseStats;
+  error?: string;
+}
+
+export function streamDatabaseStats(
+  onMessage: (data: DatabaseStatsMessage) => void
+): () => void {
+  const eventSource = new EventSource(`${API_BASE}/monitoring/database/stream`);
+
+  eventSource.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data) as DatabaseStatsMessage;
+      onMessage(data);
+    } catch {
+      // Ignore parse errors
+    }
+  };
+
+  eventSource.onerror = () => {
+    onMessage({ type: 'error', error: 'Connection lost' });
+  };
+
+  // Return cleanup function
+  return () => eventSource.close();
 }

@@ -9,13 +9,19 @@ import { HealthModule } from './health/health.module';
 import { WebsocketModule } from './websocket/websocket.module';
 import { StatsModule } from './stats/stats.module';
 import { PeopleModule } from './people/people.module';
+import { MonitoringModule } from './monitoring/monitoring.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       load: [configuration],
-      envFilePath: [join(__dirname, '..', '..', '..', '.env'), '.env'],
+      // Look for .env in monorepo root
+      envFilePath: [
+        join(__dirname, '..', '..', '..', '.env'), // apps/server/dist -> apps/server -> apps -> root
+        join(process.cwd(), '..', '..', '.env'), // From apps/server cwd -> root (turbo)
+        '.env',
+      ],
     }),
     RedisModule,
     ImmichModule,
@@ -24,6 +30,7 @@ import { PeopleModule } from './people/people.module';
     HealthModule,
     WebsocketModule,
     PeopleModule,
+    MonitoringModule,
   ],
 })
 export class AppModule {}

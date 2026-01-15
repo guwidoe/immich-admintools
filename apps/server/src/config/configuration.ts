@@ -12,6 +12,14 @@ export default () => ({
     url: process.env.REDIS_URL || 'redis://localhost:6379',
   },
 
+  database: {
+    host: process.env.DB_HOST || 'localhost',
+    port: parseInt(process.env.DB_PORT || '5432', 10),
+    database: process.env.DB_DATABASE_NAME || 'immich',
+    username: process.env.DB_USERNAME || 'postgres',
+    password: process.env.DB_PASSWORD || 'postgres',
+  },
+
   autoHeal: {
     enabled: process.env.AUTO_HEAL_ENABLED === 'true',
     checkIntervalSeconds: parseInt(process.env.AUTO_HEAL_INTERVAL || '60', 10),

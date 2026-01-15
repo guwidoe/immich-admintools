@@ -34,7 +34,7 @@
     : ''}"
 >
   <div class="flex w-full place-items-center gap-4 ps-5 overflow-hidden truncate">
-    <Icon {icon} size="1.5em" class="shrink-0" ariaHidden />
+    <Icon {icon} size="1.5em" class="shrink-0" aria-hidden="true" />
     <span class="text-sm font-medium">{title}</span>
   </div>
 </a>
