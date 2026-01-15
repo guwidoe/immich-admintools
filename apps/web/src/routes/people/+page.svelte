@@ -16,14 +16,17 @@
   import MergeProgress from '$lib/components/MergeProgress.svelte';
   import FacePreviewModal from '$lib/components/FacePreviewModal.svelte';
 
-  // State
+  // State - persisted via store
   let thresholdInput = $state(80);
   let threshold = $state(80);
   let selectedClusterIds = $state<Set<string>>(new Set());
-  let mergingClusterIds = $state<Set<string>>(new Set());
-  // Track which people are selected for merging within each cluster
-  // Map<clusterId, Set<personId>> - defaults to all people selected
   let clusterPersonSelections = $state<Map<string, Set<string>>>(new Map());
+  let people = $state<Person[]>([]);
+  let clusters = $state<PersonCluster[]>([]);
+  let hasFetched = $state(false);
+
+  // State - transient (not persisted)
+  let mergingClusterIds = $state<Set<string>>(new Set());
   let showProgress = $state(false);
   let mergeTotal = $state(0);
   let mergeCompleted = $state(0);
@@ -34,10 +37,24 @@
   let computing = $state(false);
   let computeProgress = $state(0); // 0-100 percentage for computing
   let error = $state<string | null>(null);
-  let people = $state<Person[]>([]);
-  let clusters = $state<PersonCluster[]>([]);
-  let hasFetched = $state(false);
   let facePreviewPerson = $state<Person | null>(null);
+
+  // Helper to persist state to store (called after state changes)
+  function persistState() {
+    // Convert Set/Map to arrays/objects for serialization
+    const selectionsObj: Record<string, string[]> = {};
+    for (const [clusterId, personIds] of clusterPersonSelections) {
+      selectionsObj[clusterId] = [...personIds];
+    }
+    peopleStore.updateState({
+      people,
+      clusters,
+      selectedClusterIds: [...selectedClusterIds],
+      clusterPersonSelections: selectionsObj,
+      threshold,
+      hasFetched
+    });
+  }
 
   // Web Worker for clustering
   let clusterWorker: Worker | null = null;
@@ -75,22 +92,43 @@
             newSelections.set(cluster.id, new Set(cluster.people.map((p) => p.id)));
           }
           clusterPersonSelections = newSelections;
+          // Clear cluster selections since cluster IDs changed
+          selectedClusterIds = new Set();
           computing = false;
+          // Persist the new state
+          persistState();
         }, 200);
       }
     };
 
     // Check if we have cached data
     const cached = get(peopleStore);
-    if (cached.threshold !== threshold) {
+    if (cached.hasFetched && cached.people.length > 0) {
+      // Restore all persisted state
       threshold = cached.threshold;
       thresholdInput = cached.threshold;
-    }
-    if (cached.hasFetched && cached.people.length > 0) {
       people = cached.people;
       hasFetched = true;
-      // Recompute clusters with cached data
-      computeClusters();
+
+      // Restore clusters if available (same threshold means same clusters)
+      if (cached.clusters.length > 0) {
+        clusters = cached.clusters;
+        // Restore selections
+        selectedClusterIds = new Set(cached.selectedClusterIds);
+        // Restore person selections (convert from Record to Map)
+        const selectionsMap = new Map<string, Set<string>>();
+        for (const [clusterId, personIds] of Object.entries(cached.clusterPersonSelections)) {
+          selectionsMap.set(clusterId, new Set(personIds));
+        }
+        clusterPersonSelections = selectionsMap;
+      } else {
+        // Recompute clusters if not cached
+        computeClusters();
+      }
+    } else if (cached.threshold !== 80) {
+      // Just restore threshold preference
+      threshold = cached.threshold;
+      thresholdInput = cached.threshold;
     }
   });
 
@@ -145,9 +183,6 @@
       hasFetched = true;
       fetchProgress = 100;
 
-      // Save to store for caching
-      peopleStore.setPeople(result);
-
       loadingStatus = `Analyzing ${result.length.toLocaleString()} people for similar names...`;
       await tick();
       await computeClusters();
@@ -164,8 +199,8 @@
           ...c,
           people: c.people.map((p) => ({ ...p, assetCount: countMap.get(p.id) }))
         }));
-        // Update store with counts
-        peopleStore.setPeople(people);
+        // Persist updated state with counts
+        persistState();
       });
     } catch (err) {
       error = err instanceof Error ? err.message : 'Failed to fetch people';
@@ -182,6 +217,7 @@
       newSet.add(clusterId);
     }
     selectedClusterIds = newSet;
+    persistState();
   }
 
   function toggleSelectAll() {
@@ -190,6 +226,7 @@
     } else {
       selectedClusterIds = new Set(clusters.map((c) => c.id));
     }
+    persistState();
   }
 
   function changePrimary(clusterId: string, personId: string) {
@@ -205,6 +242,7 @@
       newMap.set(clusterId, newSelection);
       clusterPersonSelections = newMap;
     }
+    persistState();
   }
 
   function togglePersonSelection(clusterId: string, personId: string) {
@@ -228,6 +266,7 @@
     const newMap = new Map(clusterPersonSelections);
     newMap.set(clusterId, newSelection);
     clusterPersonSelections = newMap;
+    persistState();
   }
 
   function getSelectedPeopleForCluster(clusterId: string): Set<string> {
@@ -288,14 +327,19 @@
       .filter((p) => !mergedIds.has(p.id))
       .map((p) => (p.id === cluster.primaryId ? { ...p, assetCount: totalAssets } : p));
 
-    // Update the store as well
-    peopleStore.setPeople(people);
-
     // Remove the cluster from the list
     clusters = clusters.filter((c) => c.id !== cluster.id);
 
     // Clean up selection
     selectedClusterIds = new Set([...selectedClusterIds].filter((id) => id !== cluster.id));
+
+    // Remove person selection for this cluster
+    const newSelections = new Map(clusterPersonSelections);
+    newSelections.delete(cluster.id);
+    clusterPersonSelections = newSelections;
+
+    // Persist all changes
+    persistState();
   }
 
   async function handleMergeSingle(cluster: PersonCluster) {
@@ -332,6 +376,7 @@
     }
 
     selectedClusterIds = new Set();
+    persistState();
   }
 
   function closeProgress() {
