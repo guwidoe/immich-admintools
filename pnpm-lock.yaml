@@ -28,8 +28,8 @@ importers:
   apps/server:
     dependencies:
       '@immich/sdk':
-        specifier: ^2.5.3
-        version: 2.5.3
+        specifier: ^1.132.1
+        version: 1.138.1
       '@nestjs/common':
         specifier: ^10.4.15
         version: 10.4.22(reflect-metadata@0.2.2)(rxjs@7.8.2)
@@ -504,8 +504,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@immich/sdk@2.5.3':
-    resolution: {integrity: sha512-SUF4qFbHXHiX1CWBOdkjlfd4ScPe0qvh/cUpcF63jTJLHIjYHN9z+sIWDj1nOIg7cuEmakJ24BFZZ/fhv5z+Eg==}
+  '@immich/sdk@1.138.1':
+    resolution: {integrity: sha512-1n4YeqkM2wicaNKW3HoSKSEbM4o4GjVxKn57/DyJIQF+EreA4Pa0xs4VaWWbg7u6hjddTP2y50aWDFqamHFqFA==}
 
   '@immich/svelte-markdown-preprocess@0.2.1':
     resolution: {integrity: sha512-mbr/g75lO8Zh+ELCuYrZP0XB4gf2UbK8rJcGYMYxFJJzMMunV+sm9FqtV1dbwW2dpXzCZGz1XPCEZ6oo526TbA==}
@@ -3347,7 +3347,7 @@ snapshots:
   '@img/sharp-win32-x64@0.33.5':
     optional: true
 
-  '@immich/sdk@2.5.3':
+  '@immich/sdk@1.138.1':
     dependencies:
       '@oazapfts/runtime': 1.1.0
 
@@ -5161,13 +5161,6 @@ snapshots:
   node-emoji@1.11.0:
     dependencies:
       lodash: 4.17.23
-
-  node-emoji@2.2.0:
-    dependencies:
-      '@sindresorhus/is': 4.6.0
-      char-regex: 1.0.2
-      emojilib: 2.4.0
-      skin-tone: 2.0.0
 
   node-emoji@2.2.0:
     dependencies:
