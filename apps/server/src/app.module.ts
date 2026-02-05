@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { existsSync } from 'fs';
 import configuration from './config/configuration';
 import { QueuesModule } from './queues/queues.module';
 import { RedisModule } from './redis/redis.module';
@@ -11,6 +13,22 @@ import { StatsModule } from './stats/stats.module';
 import { PeopleModule } from './people/people.module';
 import { MonitoringModule } from './monitoring/monitoring.module';
 import { SettingsModule } from './settings/settings.module';
+
+// Resolve the web build directory:
+// - Docker: /app/apps/web/build (from __dirname = /app/apps/server/dist)
+// - Dev: not used (Vite dev server proxies /api)
+const webBuildPath = process.env.WEB_DIR || join(__dirname, '..', '..', '..', 'web', 'build');
+const serveStatic = existsSync(webBuildPath);
+
+const conditionalImports = serveStatic
+  ? [
+      ServeStaticModule.forRoot({
+        rootPath: webBuildPath,
+        // Don't serve static files for /api routes - let NestJS handle those
+        exclude: ['/api/(.*)'],
+      }),
+    ]
+  : [];
 
 @Module({
   imports: [
@@ -24,6 +42,7 @@ import { SettingsModule } from './settings/settings.module';
         '.env',
       ],
     }),
+    ...conditionalImports,
     RedisModule,
     ImmichModule,
     SettingsModule,

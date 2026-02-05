@@ -72,7 +72,7 @@ This happens because BullMQ (Immich's job queue) marks jobs as "active" when a w
 # Add to your docker-compose.yml
 services:
   immich-admin-tools:
-    image: ghcr.io/your-org/immich-admin-tools:latest
+    image: ghcr.io/guwidoe/immich-admintools:latest
     container_name: immich_admin_tools
     environment:
       - IMMICH_API_URL=http://immich_server:2283
@@ -86,12 +86,25 @@ services:
       - DB_DATABASE_NAME=immich
     ports:
       - "2285:3000"
-    depends_on:
-      - immich_server
-      - immich_redis
+    restart: unless-stopped
+    # If running alongside the Immich docker-compose stack, uncomment:
+    # networks:
+    #   - immich_default
 ```
 
 Then visit `http://localhost:2285`
+
+### Building from Source
+
+If you prefer to build the image yourself:
+
+```bash
+git clone https://github.com/guwidoe/immich-admintools.git
+cd immich-admintools
+docker build -f docker/Dockerfile -t immich-admintools .
+```
+
+Then use `image: immich-admintools` instead of the GHCR reference above.
 
 ## Configuration
 
@@ -157,7 +170,7 @@ pnpm build
 
 Contributions are welcome! If you find a bug or have a feature request:
 
-1. **Report issues** on [GitHub Issues](https://github.com/your-org/immich-admin-tools/issues)
+1. **Report issues** on [GitHub Issues](https://github.com/guwidoe/immich-admintools/issues)
 2. **Submit PRs** - Fork the repo, create a feature branch, and open a pull request
 
 Please ensure your code follows the existing style and includes appropriate tests.

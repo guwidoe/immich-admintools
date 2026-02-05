@@ -5,18 +5,19 @@ RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
 
 WORKDIR /app
 
-# Copy package files
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml* ./
+# Copy package files first for better layer caching
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY apps/server/package.json ./apps/server/
 COPY apps/web/package.json ./apps/web/
 
-# Install dependencies
+# Install all dependencies (including devDependencies for building)
 RUN pnpm install --frozen-lockfile
 
 # Copy source code
-COPY . .
+COPY apps/ ./apps/
+COPY turbo.json ./
 
-# Build both apps
+# Build both apps (turbo handles dependency order)
 RUN pnpm build
 
 # Production stage
@@ -26,21 +27,35 @@ RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
 
 WORKDIR /app
 
-# Copy built assets
-COPY --from=builder /app/apps/server/dist ./server/dist
-COPY --from=builder /app/apps/server/package.json ./server/
-COPY --from=builder /app/apps/web/build ./web/build
-COPY --from=builder /app/apps/web/package.json ./web/
+# Copy workspace config for production dependency install
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY apps/server/package.json ./apps/server/
+COPY apps/web/package.json ./apps/web/
 
 # Install production dependencies only
-COPY --from=builder /app/package.json /app/pnpm-workspace.yaml ./
 RUN pnpm install --prod --frozen-lockfile
 
-# Set environment
+# Copy built server (NestJS compiled output)
+COPY --from=builder /app/apps/server/dist ./apps/server/dist
+
+# Copy built web (SvelteKit static build)
+COPY --from=builder /app/apps/web/build ./apps/web/build
+
+# The server will serve the static frontend via @nestjs/serve-static
+# WEB_DIR tells the server where to find the built frontend
 ENV NODE_ENV=production
 ENV PORT=3000
+ENV WEB_DIR=/app/apps/web/build
 
 EXPOSE 3000
 
-# Start the server (serves both API and static frontend)
-CMD ["node", "server/dist/main.js"]
+WORKDIR /app/apps/server
+
+# Create data directory for persistent settings (mountable as volume)
+RUN mkdir -p data
+VOLUME /app/apps/server/data
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget -qO- http://localhost:3000/api/health || exit 1
+
+CMD ["node", "dist/main.js"]

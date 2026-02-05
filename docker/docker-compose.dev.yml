@@ -1,7 +1,28 @@
-# Development docker-compose with local Redis for testing
-# Use this when developing without a full Immich instance
+# Development docker-compose
+# Builds from source instead of pulling from GHCR
+# Includes a local Redis for testing without a full Immich instance
 
 services:
+  immich-admin-tools:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: immich_admin_tools
+    environment:
+      - IMMICH_API_URL=${IMMICH_API_URL:-http://immich_server:2283}
+      - IMMICH_API_KEY=${IMMICH_API_KEY}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379}
+      - DB_HOST=${DB_HOST:-}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_USERNAME=${DB_USERNAME:-}
+      - DB_PASSWORD=${DB_PASSWORD:-}
+      - DB_DATABASE_NAME=${DB_DATABASE_NAME:-immich}
+    ports:
+      - "2285:3000"
+    depends_on:
+      - redis
+    restart: unless-stopped
+
   redis:
     image: redis:7-alpine
     container_name: admin_tools_redis

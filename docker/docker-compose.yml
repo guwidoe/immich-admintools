@@ -1,27 +1,26 @@
-# Development docker-compose for Immich Admin Tools
+# Production docker-compose for Immich Admin Tools
 # This assumes you have Immich running separately
 
 services:
   immich-admin-tools:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile
+    image: ghcr.io/guwidoe/immich-admintools:latest
     container_name: immich_admin_tools
     environment:
       - IMMICH_API_URL=${IMMICH_API_URL:-http://immich_server:2283}
       - IMMICH_API_KEY=${IMMICH_API_KEY}
       - REDIS_URL=${REDIS_URL:-redis://immich_redis:6379}
-      - PORT=3000
-      - LOG_LEVEL=info
+      # Optional: Database monitoring (requires direct PostgreSQL access)
+      - DB_HOST=${DB_HOST:-}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_USERNAME=${DB_USERNAME:-}
+      - DB_PASSWORD=${DB_PASSWORD:-}
+      - DB_DATABASE_NAME=${DB_DATABASE_NAME:-immich}
     ports:
       - "2285:3000"
     restart: unless-stopped
     # Uncomment if running alongside Immich stack
     # networks:
     #   - immich_default
-    # depends_on:
-    #   - immich_server
-    #   - immich_redis
 
 # Uncomment to join Immich's network
 # networks:
