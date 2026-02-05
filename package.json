@@ -19,12 +19,12 @@
     "typecheck": "turbo typecheck"
   },
   "devDependencies": {
-    "prettier": "^3.4.2",
+    "prettier": "^3.8.1",
     "prettier-plugin-svelte": "^3.3.3",
-    "turbo": "^2.3.4",
+    "turbo": "^2.8.3",
     "typescript": "^5.7.3"
   },
   "dependencies": {
-    "@anthropic-ai/claude-agent-sdk": "^0.2.4"
+    "@anthropic-ai/claude-agent-sdk": "^0.2.31"
   }
 }
