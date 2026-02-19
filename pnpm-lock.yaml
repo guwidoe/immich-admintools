@@ -28,8 +28,8 @@ importers:
   apps/server:
     dependencies:
       '@immich/sdk':
-        specifier: ^1.132.1
-        version: 1.138.1
+        specifier: ^2.5.6
+        version: 2.5.6
       '@nestjs/common':
         specifier: ^11.1.14
         version: 11.1.14(reflect-metadata@0.2.2)(rxjs@7.8.2)
@@ -523,8 +523,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@immich/sdk@1.138.1':
-    resolution: {integrity: sha512-1n4YeqkM2wicaNKW3HoSKSEbM4o4GjVxKn57/DyJIQF+EreA4Pa0xs4VaWWbg7u6hjddTP2y50aWDFqamHFqFA==}
+  '@immich/sdk@2.5.6':
+    resolution: {integrity: sha512-u6o0rNBsTbAkl/6vz3Z63A/yNkLYeuKiHKoJgLuvRqTpPahgxAFcfDeN8rLd0Ya1kM5I2c610/VDcvItzzVcWg==}
 
   '@immich/svelte-markdown-preprocess@0.2.1':
     resolution: {integrity: sha512-mbr/g75lO8Zh+ELCuYrZP0XB4gf2UbK8rJcGYMYxFJJzMMunV+sm9FqtV1dbwW2dpXzCZGz1XPCEZ6oo526TbA==}
@@ -854,8 +854,8 @@ packages:
     engines: {node: '>=8.0.0', npm: '>=5.0.0'}
     hasBin: true
 
-  '@oazapfts/runtime@1.1.0':
-    resolution: {integrity: sha512-PwCn69pexqg/uhc0bpEHSlRFdfTtSnq3icXHd0wf4BQwZSMKsCerTnydzegVScEegYkokzIxMcl9li7on86A2w==}
+  '@oazapfts/runtime@1.2.0':
+    resolution: {integrity: sha512-fi7dp7dNayyh/vzqhf0ZdoPfC7tJvYfjaE8MBL1yR+iIsH7cFoqHt+DV70VU49OMCqLc7wQa+yVJcSmIRnV4wA==}
 
   '@polka/url@1.0.0-next.29':
     resolution: {integrity: sha512-wwQAWhWSuHaag8c4q/KN/vCoeOJYshAIvMQwD4GpSb3OiZklFfvAgmj0VCBBImRpuF/aFgIRzllXlVX93Jevww==}
@@ -3487,9 +3487,9 @@ snapshots:
   '@img/sharp-win32-x64@0.34.5':
     optional: true
 
-  '@immich/sdk@1.138.1':
+  '@immich/sdk@2.5.6':
     dependencies:
-      '@oazapfts/runtime': 1.1.0
+      '@oazapfts/runtime': 1.2.0
 
   '@immich/svelte-markdown-preprocess@0.2.1(svelte@5.53.0)':
     dependencies:
@@ -3849,7 +3849,7 @@ snapshots:
     transitivePeerDependencies:
       - encoding
 
-  '@oazapfts/runtime@1.1.0': {}
+  '@oazapfts/runtime@1.2.0': {}
 
   '@polka/url@1.0.0-next.29': {}
 
