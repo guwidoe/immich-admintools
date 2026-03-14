@@ -149,7 +149,7 @@ Then use `image: immich-admintools` instead of the GHCR reference above.
 Built to feel native to Immich:
 
 - **Frontend**: SvelteKit 5 + Svelte 5 + [@immich/ui](https://ui.immich.app)
-- **Backend**: NestJS 10 (TypeScript)
+- **Backend**: NestJS 11 (TypeScript)
 - **API**: [@immich/sdk](https://www.npmjs.com/package/@immich/sdk)
 - **Styling**: Tailwind CSS 4
 

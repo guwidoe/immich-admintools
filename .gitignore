@@ -53,6 +53,9 @@ coverage/
 # Turbo
 .turbo/
 
+# Pi local workspace data
+.pi/
+
 # Misc
 *.tgz
 .cache/

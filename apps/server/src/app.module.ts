@@ -15,17 +15,19 @@ import { MonitoringModule } from './monitoring/monitoring.module';
 import { SettingsModule } from './settings/settings.module';
 
 // Resolve the web build directory:
-// - Docker: /app/apps/web/build (from __dirname = /app/apps/server/dist)
+// - Docker/runtime build: /app/apps/web/build (from __dirname = /app/apps/server/dist)
+// - Local production build: <repo>/apps/web/build
 // - Dev: not used (Vite dev server proxies /api)
-const webBuildPath = process.env.WEB_DIR || join(__dirname, '..', '..', '..', 'web', 'build');
+const webBuildPath = process.env.WEB_DIR || join(__dirname, '..', '..', 'web', 'build');
 const serveStatic = existsSync(webBuildPath);
 
 const conditionalImports = serveStatic
   ? [
       ServeStaticModule.forRoot({
         rootPath: webBuildPath,
-        // Don't serve static files for /api routes - let NestJS handle those
-        exclude: ['/api/(.*)'],
+        // Express 5 / path-to-regexp v8 require named wildcards.
+        // Keep /api routes owned by NestJS while serving the SPA elsewhere.
+        exclude: ['/api/{*path}'],
       }),
     ]
   : [];

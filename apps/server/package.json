@@ -16,10 +16,10 @@
   "dependencies": {
     "@immich/sdk": "^2.5.6",
     "@nestjs/common": "^11.1.16",
-    "@nestjs/config": "^3.3.0",
+    "@nestjs/config": "^4.0.3",
     "@nestjs/core": "^11.1.16",
     "@nestjs/platform-express": "^11.1.16",
-    "@nestjs/serve-static": "^4.0.2",
+    "@nestjs/serve-static": "^5.0.4",
     "@nestjs/platform-socket.io": "^11.1.16",
     "@nestjs/websockets": "^11.1.16",
     "bullmq": "^5.71.0",
@@ -31,7 +31,7 @@
   },
   "devDependencies": {
     "@nestjs/cli": "^11.0.16",
-    "@nestjs/schematics": "^10.2.3",
+    "@nestjs/schematics": "^11.0.9",
     "@types/express": "^5.0.0",
     "@types/node": "^25.5.0",
     "@types/pg": "^8.18.0",
