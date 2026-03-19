@@ -6,11 +6,11 @@
 </p>
 
 <p align="center">
-  <strong>Enhanced job queue management and monitoring for Immich</strong>
+  <strong>Enhanced queue management, people deduplication, and face-group cleanup for Immich</strong>
 </p>
 
 <p align="center">
-  <em>More transparency. More control. Less stuck jobs.</em>
+  <em>More transparency. More control. Less stuck jobs. Cleaner people groups.</em>
 </p>
 
 ---
@@ -31,6 +31,8 @@ This happens because BullMQ (Immich's job queue) marks jobs as "active" when a w
 
 **Immich Admin Tools** is a companion dashboard that runs alongside your Immich instance, providing:
 
+It started as a queue operations tool, but it also includes a dedicated **People** workflow to clean up duplicate/fragmented face groups with visual review before merging.
+
 ### Queue Management
 | Feature | Description |
 |---------|-------------|
@@ -42,14 +44,15 @@ This happens because BullMQ (Immich's job queue) marks jobs as "active" when a w
 | **Job Browser** | Browse active, waiting, failed, and delayed jobs with pagination |
 | **Auto-Heal Mode** | Optionally auto-clear stuck jobs on a schedule |
 
-### People Management
+### People & Face Grouping
 | Feature | Description |
 |---------|-------------|
-| **Duplicate Detection** | Find people with similar names using fuzzy matching |
-| **Similarity Clustering** | Adjustable threshold (50-100%) for grouping duplicates |
-| **Face Previews** | See actual face thumbnails before merging |
-| **Bulk Merge** | Merge multiple clusters at once with progress tracking |
-| **Selective Control** | Choose which people to include in each merge |
+| **Duplicate Detection** | Find likely duplicate people using fuzzy name matching |
+| **Similarity Clustering** | Tune threshold (50-100%) to broaden or narrow grouping |
+| **Cluster Review** | Inspect each suggested group and pick the primary person |
+| **Face Inspection** | Open all detected faces for a person (zoomed face/full image views) before merging |
+| **Selective Merge Control** | Include/exclude individual people inside a cluster |
+| **Bulk Merge** | Merge many reviewed clusters at once with progress tracking |
 
 ### Database Monitoring
 | Feature | Description |
@@ -65,6 +68,18 @@ This happens because BullMQ (Immich's job queue) marks jobs as "active" when a w
 | **Job Statistics** | Cumulative completed/failed counts per queue |
 | **Success Rates** | Color-coded success rate tracking |
 | **Historical View** | Track job completion patterns over time |
+
+## UI Gallery
+
+Get a quick feel for the app before you install it:
+
+| Jobs Dashboard | Queue Details | Job History |
+|---|---|---|
+| [![Jobs Dashboard](assets/jobs-dashboard.png)](assets/jobs-dashboard.png) | [![Queue Details](assets/queue-details.png)](assets/queue-details.png) | [![Job History](assets/job-history.png)](assets/job-history.png) |
+
+| People Merge | Face Review | Database Query Monitoring |
+|---|---|---|
+| [![People Merge](assets/merge-people.png)](assets/merge-people.png) | [![Face Review UI](assets/merge-people-face-review-ui.png)](assets/merge-people-face-review-ui.png) | [![Database Query Monitoring](assets/database-query-monitoring.png)](assets/database-query-monitoring.png) |
 
 ## Quick Start
 
