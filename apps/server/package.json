@@ -22,7 +22,7 @@
     "@nestjs/serve-static": "^5.0.5",
     "@nestjs/platform-socket.io": "^11.1.19",
     "@nestjs/websockets": "^11.1.19",
-    "bullmq": "^5.74.1",
+    "bullmq": "^5.76.1",
     "ioredis": "^5.10.1",
     "pg": "^8.20.0",
     "reflect-metadata": "^0.2.2",
@@ -35,9 +35,9 @@
     "@types/express": "^5.0.0",
     "@types/node": "^25.6.0",
     "@types/pg": "^8.20.0",
-    "@typescript-eslint/eslint-plugin": "^8.58.2",
-    "@typescript-eslint/parser": "^8.58.2",
-    "eslint": "^10.2.0",
-    "typescript": "^6.0.2"
+    "@typescript-eslint/eslint-plugin": "^8.59.0",
+    "@typescript-eslint/parser": "^8.59.0",
+    "eslint": "^10.2.1",
+    "typescript": "^6.0.3"
   }
 }
