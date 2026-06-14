@@ -1,7 +1,10 @@
 node_modules/
+**/node_modules/
 .git/
 .turbo/
+**/.turbo/
 .svelte-kit/
+**/.svelte-kit/
 .claude/
 .cursor/
 .env
