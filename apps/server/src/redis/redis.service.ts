@@ -13,16 +13,27 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 
     console.log(`[RedisService] Connecting to Redis at ${redisUrl}...`);
 
+    let client: Redis | null = null;
+
     try {
-      this.client = new Redis(redisUrl, {
-        maxRetriesPerRequest: 3,
+      client = new Redis(redisUrl, {
+        maxRetriesPerRequest: 1,
         lazyConnect: true,
+        connectTimeout: 5000,
+        enableOfflineQueue: false,
+        retryStrategy: () => null,
       });
 
-      await this.client.connect();
+      client.on('error', (error) => {
+        console.warn(`[RedisService] Redis connection error: ${error.message}`);
+      });
+
+      await client.connect();
+      this.client = client;
       console.log('[RedisService] Successfully connected to Redis');
     } catch (error) {
       console.error('[RedisService] Failed to connect to Redis:', error);
+      client?.disconnect(false);
       this.client = null;
     }
   }

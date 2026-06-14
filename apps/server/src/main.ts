@@ -15,8 +15,21 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api');
 
-  await app.listen(port);
-  console.log(`🚀 Immich Admin Tools server running on http://localhost:${port}`);
+  try {
+    await app.listen(port);
+    console.log(`🚀 Immich Admin Tools server running on http://localhost:${port}`);
+  } catch (error) {
+    const listenError = error as NodeJS.ErrnoException;
+
+    if (listenError.code === 'EADDRINUSE') {
+      console.error(
+        `[Server] Port ${port} is already in use. Update PORT in .env to a free port (for example 3101) and restart pnpm dev.`,
+      );
+    }
+
+    await app.close().catch(() => undefined);
+    throw error;
+  }
 }
 
 bootstrap();

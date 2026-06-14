@@ -31,6 +31,11 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
         connectionTimeoutMillis: 5000,
       });
 
+      this.pool.on('error', (error) => {
+        console.warn('[DatabaseService] PostgreSQL pool error:', error.message);
+        this.isConnected = false;
+      });
+
       // Test the connection
       const client = await this.pool.connect();
       client.release();
@@ -39,6 +44,8 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     } catch (error) {
       console.warn('[DatabaseService] Failed to connect to PostgreSQL:', error);
       this.isConnected = false;
+      await this.pool?.end().catch(() => undefined);
+      this.pool = null;
     }
   }
 
