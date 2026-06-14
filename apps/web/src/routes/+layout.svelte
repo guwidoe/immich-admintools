@@ -4,7 +4,7 @@
   import { page } from '$app/stores';
   import { fetchHealth } from '$lib/api/client';
   import type { Snippet } from 'svelte';
-  import { initializeTheme, ThemeSwitcher, Logo, TooltipProvider } from '@immich/ui';
+  import { ThemeSwitcher, Logo, TooltipProvider, themeManager } from '@immich/ui';
   import { mdiViewDashboard, mdiHistory, mdiCog, mdiAccountMultiple, mdiChartTimelineVariant } from '@mdi/js';
   import SideBarLink from '$lib/components/SideBarLink.svelte';
 
@@ -48,7 +48,7 @@
 
   onMount(() => {
     mounted = true;
-    initializeTheme({ selector: 'html' });
+    themeManager.setPreference(themeManager.preference);
     checkHealth();
     const pollInterval = setInterval(checkHealth, 30000);
 
