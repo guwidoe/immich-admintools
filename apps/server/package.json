@@ -15,14 +15,14 @@
   },
   "dependencies": {
     "@immich/sdk": "^2.7.5",
-    "@nestjs/common": "^11.1.26",
+    "@nestjs/common": "^11.1.27",
     "@nestjs/config": "^4.0.4",
-    "@nestjs/core": "^11.1.26",
-    "@nestjs/platform-express": "^11.1.26",
+    "@nestjs/core": "^11.1.27",
+    "@nestjs/platform-express": "^11.1.27",
     "@nestjs/serve-static": "^5.0.5",
-    "@nestjs/platform-socket.io": "^11.1.26",
-    "@nestjs/websockets": "^11.1.26",
-    "bullmq": "^5.78.0",
+    "@nestjs/platform-socket.io": "^11.1.27",
+    "@nestjs/websockets": "^11.1.27",
+    "bullmq": "^5.79.0",
     "ioredis": "^5.11.1",
     "pg": "^8.21.0",
     "reflect-metadata": "^0.2.2",
@@ -35,9 +35,9 @@
     "@types/express": "^5.0.0",
     "@types/node": "^25.9.3",
     "@types/pg": "^8.20.0",
-    "@typescript-eslint/eslint-plugin": "^8.61.0",
-    "@typescript-eslint/parser": "^8.61.0",
-    "eslint": "^10.4.1",
+    "@typescript-eslint/eslint-plugin": "^8.61.1",
+    "@typescript-eslint/parser": "^8.61.1",
+    "eslint": "^10.5.0",
     "typescript": "^6.0.3"
   }
 }
