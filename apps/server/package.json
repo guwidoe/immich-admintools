@@ -33,7 +33,7 @@
     "@nestjs/cli": "^11.0.24",
     "@nestjs/schematics": "^11.1.0",
     "@types/express": "^5.0.0",
-    "@types/node": "^25.9.3",
+    "@types/node": "^26.1.1",
     "@types/pg": "^8.20.0",
     "@typescript-eslint/eslint-plugin": "^8.64.0",
     "@typescript-eslint/parser": "^8.64.0",
