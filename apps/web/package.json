@@ -17,15 +17,15 @@
   },
   "devDependencies": {
     "@sveltejs/adapter-static": "^3.0.0",
-    "@sveltejs/kit": "^2.69.2",
+    "@sveltejs/kit": "^2.69.3",
     "@sveltejs/vite-plugin-svelte": "^7.2.0",
-    "@tailwindcss/postcss": "^4.3.2",
-    "@tailwindcss/vite": "^4.3.2",
-    "postcss": "^8.5.16",
-    "svelte": "^5.56.4",
-    "svelte-check": "^4.7.2",
-    "tailwindcss": "^4.3.2",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@tailwindcss/vite": "^4.3.3",
+    "postcss": "^8.5.19",
+    "svelte": "^5.56.5",
+    "svelte-check": "^4.7.3",
+    "tailwindcss": "^4.3.3",
     "typescript": "^6.0.3",
-    "vite": "^8.1.4"
+    "vite": "^8.1.5"
   }
 }
