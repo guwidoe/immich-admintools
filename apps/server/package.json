@@ -22,7 +22,7 @@
     "@nestjs/serve-static": "^5.0.5",
     "@nestjs/platform-socket.io": "^11.2.1",
     "@nestjs/websockets": "^11.2.1",
-    "bullmq": "^5.81.2",
+    "bullmq": "^6.1.2",
     "ioredis": "^6.0.0",
     "pg": "^8.23.0",
     "reflect-metadata": "^0.2.2",
