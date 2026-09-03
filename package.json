@@ -21,10 +21,10 @@
   "devDependencies": {
     "prettier": "^3.9.6",
     "prettier-plugin-svelte": "^4.1.1",
-    "turbo": "^2.10.11",
+    "turbo": "^2.10.12",
     "typescript": "^7.0.2"
   },
   "dependencies": {
-    "@anthropic-ai/claude-agent-sdk": "^0.3.241"
+    "@anthropic-ai/claude-agent-sdk": "^0.3.252"
   }
 }
