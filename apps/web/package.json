@@ -22,7 +22,7 @@
     "@tailwindcss/postcss": "^4.3.3",
     "@tailwindcss/vite": "^4.3.3",
     "postcss": "^8.5.28",
-    "svelte": "^5.57.0",
+    "svelte": "^5.57.1",
     "svelte-check": "^4.7.6",
     "tailwindcss": "^4.3.3",
     "typescript": "^7.0.2",
