@@ -14,15 +14,15 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@immich/sdk": "^3.3.6",
-    "@nestjs/common": "^12.4.2",
+    "@immich/sdk": "^3.4.1",
+    "@nestjs/common": "^12.5.0",
     "@nestjs/config": "^12.1.1",
-    "@nestjs/core": "^12.4.2",
-    "@nestjs/platform-express": "^12.4.2",
+    "@nestjs/core": "^12.5.0",
+    "@nestjs/platform-express": "^12.5.0",
     "@nestjs/serve-static": "^12.1.1",
-    "@nestjs/platform-socket.io": "^12.4.2",
-    "@nestjs/websockets": "^12.4.2",
-    "bullmq": "^6.7.2",
+    "@nestjs/platform-socket.io": "^12.5.0",
+    "@nestjs/websockets": "^12.5.0",
+    "bullmq": "^6.7.6",
     "ioredis": "^6.0.0",
     "pg": "^8.23.1",
     "reflect-metadata": "^0.2.2",
@@ -30,14 +30,14 @@
     "socket.io": "^4.8.4"
   },
   "devDependencies": {
-    "@nestjs/cli": "^12.0.12",
+    "@nestjs/cli": "^12.0.13",
     "@nestjs/schematics": "^12.0.13",
     "@types/express": "^5.0.0",
     "@types/node": "^26.6.6",
     "@types/pg": "^8.23.1",
-    "@typescript-eslint/eslint-plugin": "^8.72.2",
-    "@typescript-eslint/parser": "^8.72.2",
-    "eslint": "^10.14.0",
+    "@typescript-eslint/eslint-plugin": "^8.73.0",
+    "@typescript-eslint/parser": "^8.73.0",
+    "eslint": "^10.15.0",
     "typescript": "^7.0.2"
   }
 }
